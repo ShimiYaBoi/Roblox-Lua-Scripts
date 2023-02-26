@@ -1,1 +1,3 @@
-loadstring(game:HttpGet("**LINK**"))()
+if game.PlaceId == 662417684 then
+  loadstring(game:HttpGet("https://raw.githubusercontent.com/ShimiYaBoi/Roblox-Lua-Scripts/main/Scripts/Lucky%20Block%20Battleground"))()
+end
