@@ -4,3 +4,6 @@ end
 if game.PlaceId == 10198661638 then
   loadstring(game:HttpGet("https://raw.githubusercontent.com/ShimiYaBoi/Roblox-Lua-Scripts/main/Scripts/Farm%20Factory%20Tycoon.lua"))()
 end
+if game.PlaceId == 6677985923 then
+  loadstring(game:HttpGet("https://raw.githubusercontent.com/ShimiYaBoi/Roblox-Lua-Scripts/main/Scripts/Millionaire%20Empire%20Tycoon.lua"))()  
+end
