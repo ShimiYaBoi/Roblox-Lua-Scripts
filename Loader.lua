@@ -13,3 +13,6 @@ if game.PlaceId == 1962086868 or game.PlaceId == 3582763398 or game.PlaceId == 5
     print("Damn.... Got Banned? Well Sucks to be you")
     end
 end
+if game.PlaceId == 3101667897 then
+  loadstring(game:HttpGet("https://raw.githubusercontent.com/ShimiYaBoi/Roblox-Lua-Scripts/main/Scripts/Legends%20Of%20Speed.lua"))()  
+end
