@@ -16,3 +16,6 @@ end
 if game.PlaceId == 3101667897 then
   loadstring(game:HttpGet("https://raw.githubusercontent.com/ShimiYaBoi/Roblox-Lua-Scripts/main/Scripts/Legends%20Of%20Speed.lua"))()  
 end
+if game.PlaceId == 6284583030 then
+  loadstring(game:HttpGet("https://raw.githubusercontent.com/ShimiYaBoi/Roblox-Lua-Scripts/main/Scripts/Pet%20Sim%20X%20Mini%20GUI.lua"))()  
+end
