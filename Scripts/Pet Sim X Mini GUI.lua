@@ -98,11 +98,6 @@ MainSection:NewToggle("Lootbags", "...", function(state)
     Loot_LootBags()
 end)
 
-MainSection:NewToggle("Comet Notification", "...", function(state)
-    getgenv().CometFinder = state
-    CometNotif()
-end)
-
 MainSection:NewKeybind("Toggle UI", "Toggles UI", Enum.KeyCode.RightAlt, function()
 	Library:ToggleUI()
  end)
