@@ -20,5 +20,5 @@ if game.PlaceId == 6284583030 then
   loadstring(game:HttpGet("https://raw.githubusercontent.com/ShimiYaBoi/Roblox-Lua-Scripts/main/Scripts/Pet%20Sim%20X%20Mini%20GUI.lua"))()  
 end
 if game.PlaceId == 10919241870 then
-  loadstring(game:HttpGet("https://raw.githubusercontent.com/ShimiYaBoi/Roblox-Lua-Scripts/main/Scripts/Rarity%20Drop%20Tycoon.lua"))
+  loadstring(game:HttpGet("https://raw.githubusercontent.com/ShimiYaBoi/Roblox-Lua-Scripts/main/Scripts/Rarity%20Drop%20Tycoon.lua"))()
 end
