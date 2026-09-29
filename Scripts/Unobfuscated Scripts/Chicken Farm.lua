@@ -9,7 +9,19 @@
                                                                                                                                                                          
 ]]
 
+local ws = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local plr = Players.LocalPlayer
+local char = plr.Character
+local RS = game:GetService("ReplicatedStorage")
+local Remotes = RS:FindFirstChild("Paper").Remotes
 
+
+getgenv().AutoCollectEggs = false;
+getgenv().AutoBuyChickens = false;
+getgenv().AutoCollectMoney = false;
+getgenv().AutoDepositEggs = false;
+getgenv().AutoObby = false;
 
 --[[
  ______   __  __   ___   __    ______  _________  ________  ______   ___   __    ______      
@@ -22,6 +34,32 @@
                                                                                              
 ]]
 
+function CollectEggsFunc()
+    for _, v in ipairs(ws:FindFirstChild("Eggs"):GetChildren()) do
+        if v:IsA("Model") then
+            local Event = Remotes.__remoteevent
+            if not model then continue end
+            v.PrimaryPart.Position = char:FindFirstChild("HumanoidRootPart").Position
+            Event:FireServer("Collect Egg", v.Name)
+            v:Destroy()
+        end
+    end
+end
+
+function DepositEggsFunc()
+    local Event = Remotes.__remotefunction
+    Event:InvokeServer("Deposit Eggs")
+end
+
+function CollectMoneyFunc()
+    local Event = Remotes.__remotefunction
+    Event:InvokeServer("Collect Cash")
+end
+
+function AutoObbyFunc()
+    local Event = Remotes.__remotefunction
+    Event:InvokeServer("Claim Obby")
+end
 
 
 --[[
@@ -34,3 +72,5 @@
     \_____\/\________\/ \_______\/ \_\/ \_\/ \__\/\__\/ \_\/ \_\/  \__\/ 
                                                                          
  ]]
+
+ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
