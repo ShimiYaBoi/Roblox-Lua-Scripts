@@ -262,10 +262,53 @@ local PlayerWindow = Window:Tab({
     Locked = false,
 })
 
+local Slider = PlayerWindow:Slider({
+    Title = "Speed",
+    Desc = "Set Your Walk Speed",
+    
+    -- To make float number supported, 
+    -- make the Step a float number.
+    -- example: Step = 0.1
+    Step = 0.1,
+    Value = {
+        Min = 1,
+        Max = 999,
+        Default = 16,
+    },
+    Callback = function(value)
+        hum.WalkSpeed = value
+    end
+})
 
+local Slider = PlayerWindow:Slider({
+    Title = "Jump",
+    Desc = "Set Your Jump Power",
+    
+    -- To make float number supported, 
+    -- make the Step a float number.
+    -- example: Step = 0.1
+    Step = 0.1,
+    Value = {
+        Min = 1,
+        Max = 9999,
+        Default = 50,
+    },
+    Callback = function(value)
+        hum.JumpPower = value
+    end
+})
 
 local Settings = Window:Tab({
     Title = "Settings",
     Icon = "settings", -- optional
     Locked = false,
+})
+
+local Keybind = Settings:Keybind({
+    Title = "Keybind",
+    Desc = "Keybind to open ui",
+    Value = "G",
+    Callback = function(v)
+        Window:SetToggleKey(Enum.KeyCode[v])
+    end
 })
