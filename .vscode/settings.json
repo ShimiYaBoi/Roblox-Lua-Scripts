@@ -1,0 +1,8 @@
+{
+    "luau-lsp.studioPlugin.enabled": true,
+    "stylua.targetReleaseVersion": "latest"
+}
+
+"[luau]": {
+    "editor.defaultFormatter": "JohnnyMorganz.stylua"
+},
