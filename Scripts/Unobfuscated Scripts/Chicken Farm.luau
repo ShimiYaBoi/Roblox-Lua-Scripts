@@ -34,6 +34,10 @@ getgenv().AutoObby = false;
                                                                                              
 ]]
 
+--[[
+
+----> Old Function
+
 function CollectEggsFunc()
     for _, v in ipairs(ws:FindFirstChild("Eggs"):GetChildren()) do
         if v:IsA("Model") then
@@ -42,8 +46,14 @@ function CollectEggsFunc()
             v.PrimaryPart.Position = char:FindFirstChild("HumanoidRootPart").Position
             Event:FireServer("Collect Egg", v.Name)
             v:Destroy()
+        elseif not v then
+            return
         end
     end
+end]]
+
+function CollectEgg()
+
 end
 
 function DepositEggsFunc()
@@ -74,3 +84,53 @@ end
  ]]
 
  local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+ local Window = WindUI:CreateWindow({
+    Title = "Chicken Farm",
+    Icon = "egg", -- lucide icon. optional
+    Author = "by shimixd", -- optional
+})
+
+Window:EditOpenButton({
+    Title = "Open Menu",
+    Icon = "monitor",
+    CornerRadius = UDim.new(0,16),
+    StrokeThickness = 2,
+    Color = ColorSequence.new( -- gradient
+        Color3.fromHex("FF0F7B"), 
+        Color3.fromHex("F89B29")
+    ),
+    OnlyMobile = false,
+    Enabled = true,
+    Draggable = true,
+})
+
+local AutoFarm = Window:Tab({
+    Title = "Auto Farm",
+    Icon = "drumstick", -- optional
+    Locked = false,
+})
+
+local Toggle = AutoFarm:Toggle({
+    Title = "Auto Collect",
+    Desc = "Automatically Collect eggs",
+    Icon = "egg",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        getgenv().AutoCollectEggs = state
+        --Function
+    end
+})
+
+local Toggle = AutoFarm:Toggle({
+    Title = "Auto Deposit",
+    Desc = "Automatically Deposits",
+    Icon = "arrow-big-down-dash",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        getgenv().AutoDepositEggs = state
+        --Function
+    end
+})
