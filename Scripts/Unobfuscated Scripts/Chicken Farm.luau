@@ -22,6 +22,8 @@ getgenv().AutoBuyChickens = false;
 getgenv().AutoCollectMoney = false;
 getgenv().AutoDepositEggs = false;
 getgenv().AutoObby = false;
+getgenv().AutoUpgrade = false;
+getgenv().AutoMerge = false;
 
 --[[
  ______   __  __   ___   __    ______  _________  ________  ______   ___   __    ______      
@@ -57,18 +59,33 @@ function CollectEgg()
 end
 
 function DepositEggsFunc()
-    local Event = Remotes.__remotefunction
-    Event:InvokeServer("Deposit Eggs")
+    spawn(function()
+        while getgenv().AutoDepositEggs == true do
+            local Event = Remotes.__remotefunction
+            Event:InvokeServer("Deposit Eggs")
+            task.wait(1)
+        end
+    end)
 end
 
 function CollectMoneyFunc()
-    local Event = Remotes.__remotefunction
-    Event:InvokeServer("Collect Cash")
+    spawn(function()
+        while getgenv().AutoCollectMoney == true do
+            local Event = Remotes.__remotefunction
+            Event:InvokeServer("Collect Cash")
+            task.wait(1)
+        end
+    end)
 end
 
 function AutoObbyFunc()
-    local Event = Remotes.__remotefunction
-    Event:InvokeServer("Claim Obby")
+    spawn(function()
+        while getgenv().AutoObby == true do
+            local Event = Remotes.__remotefunction
+            Event:InvokeServer("Claim Obby")
+            task.wait(10)
+        end
+    end)
 end
 
 
@@ -112,13 +129,25 @@ local AutoFarm = Window:Tab({
 })
 
 local Toggle = AutoFarm:Toggle({
-    Title = "Auto Collect",
+    Title = "Auto Collect Eggs",
     Desc = "Automatically Collect eggs",
     Icon = "egg",
     Type = "Checkbox",
     Value = false, -- default value
     Callback = function(state) 
         getgenv().AutoCollectEggs = state
+        --Function
+    end
+})
+
+local Toggle = AutoFarm:Toggle({
+    Title = "Auto Buy Upgrade",
+    Desc = "Automatically Upgrades",
+    Icon = "egg",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        getgenv().AutoUpgrade = state
         --Function
     end
 })
@@ -131,6 +160,54 @@ local Toggle = AutoFarm:Toggle({
     Value = false, -- default value
     Callback = function(state) 
         getgenv().AutoDepositEggs = state
+        DepositEggsFunc()
+    end
+})
+
+local Toggle = AutoFarm:Toggle({
+    Title = "Auto Collect Cash",
+    Desc = "Automatically Collects Cash",
+    Icon = "arrow-big-down-dash",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        getgenv().AutoCollectEggs = state
+        CollectMoneyFunc()
+    end
+})
+
+local Toggle = AutoFarm:Toggle({
+    Title = "Auto Buy Chickens",
+    Desc = "Automatically Buys Chickens",
+    Icon = "egg",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        getgenv().AutoBuyChickens = state
         --Function
+    end
+})
+
+local Toggle = AutoFarm:Toggle({
+    Title = "Auto Merge",
+    Desc = "Automatically Merges",
+    Icon = "egg",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        getgenv().AutoMerge = state
+        --Function
+    end
+})
+
+local Toggle = AutoFarm:Toggle({
+    Title = "Auto Finish Obby",
+    Desc = "Finishes Obby Automatically for bonus",
+    Icon = "arrow-big-down-dash",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        getgenv().AutoObby = state
+        AutoObbyFunc()
     end
 })
