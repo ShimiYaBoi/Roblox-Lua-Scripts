@@ -26,6 +26,7 @@ getgenv().AutoObby = false;
 getgenv().AutoUpgrade = false;
 getgenv().AutoMerge = false;
 getgenv().AutoRebirth = false;
+getgenv().AutoTiers = false;
 
 --[[
  ______   __  __   ___   __    ______  _________  ________  ______   ___   __    ______      
@@ -80,6 +81,16 @@ function AutoObbyFunc()
             local Event = Remotes.__remotefunction
             Event:InvokeServer("Claim Obby")
             task.wait(10)
+        end
+    end)
+end
+
+function AutoTiersFunc()
+    spawn(function()
+        while getgenv().AutoTiers == true do
+            local Event = Remotes.__remotefunction
+            Event:InvokeServer("Upgrade Buy Tier Level")
+            task.wait(1)
         end
     end)
 end
@@ -237,6 +248,18 @@ local Toggle = AutoFarm:Toggle({
     Callback = function(state) 
         getgenv().AutoMerge = state
         AutoMergeFunc()
+    end
+})
+
+local Toggle = AutoFarm:Toggle({
+    Title = "Auto Buy Tiers",
+    Desc = "Automatically Buys Tiers",
+    Icon = "egg",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        getgenv().AutoTiers = state
+        AutoTiersFunc()
     end
 })
 
