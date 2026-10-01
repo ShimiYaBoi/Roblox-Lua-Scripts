@@ -15,6 +15,7 @@ local plr = Players.LocalPlayer
 local char = plr.Character
 local RS = game:GetService("ReplicatedStorage")
 local Remotes = RS:FindFirstChild("Paper").Remotes
+local chickenCount = nil
 
 
 getgenv().AutoCollectEggs = false;
@@ -24,6 +25,7 @@ getgenv().AutoDepositEggs = false;
 getgenv().AutoObby = false;
 getgenv().AutoUpgrade = false;
 getgenv().AutoMerge = false;
+getgenv().AutoRebirth = false;
 
 --[[
  ______   __  __   ___   __    ______  _________  ________  ______   ___   __    ______      
@@ -36,26 +38,20 @@ getgenv().AutoMerge = false;
                                                                                              
 ]]
 
---[[
-
-----> Old Function
-
-function CollectEggsFunc()
-    for _, v in ipairs(ws:FindFirstChild("Eggs"):GetChildren()) do
-        if v:IsA("Model") then
-            local Event = Remotes.__remoteevent
-            if not model then continue end
-            v.PrimaryPart.Position = char:FindFirstChild("HumanoidRootPart").Position
-            Event:FireServer("Collect Egg", v.Name)
-            v:Destroy()
-        elseif not v then
-            return
+function AutoCollectEggsFunc()
+    while getgenv().AutoCollectEggs == true do
+        for _, v in ipairs(ws:FindFirstChild("Eggs"):GetChildren()) do
+            if not v then continue end
+            if v:IsA("Model") then
+                local Event = Remotes.__remoteevent
+                v.PrimaryPart.Position = char:FindFirstChild("HumanoidRootPart").Position
+                Event:FireServer("Collect Egg", v.Name)
+                v:Destroy()
+                task.wait(0.1)
+            end
         end
+        task.wait(0.1)
     end
-end]]
-
-function CollectEgg()
-
 end
 
 function DepositEggsFunc()
@@ -73,7 +69,7 @@ function CollectMoneyFunc()
         while getgenv().AutoCollectMoney == true do
             local Event = Remotes.__remotefunction
             Event:InvokeServer("Collect Cash")
-            task.wait(1)
+            task.wait(0.1)
         end
     end)
 end
@@ -88,6 +84,40 @@ function AutoObbyFunc()
     end)
 end
 
+function AutoMergeFunc()
+    spawn(function()
+        while getgenv().AutoMerge == true do
+            local Event = Remotes.__remotefunction
+            Event:InvokeServer("Merge Chickens")
+        end
+    end)
+end
+
+function AutoBuyChickensFunc(c)
+    while getgenv().AutoBuyChickens == true do
+        local Event = Remotes.__remotefunction
+        Event:InvokeServer("Buy Chickens", c)
+    end
+end
+
+function AutoUpgradeFunc()
+    spawn(function()
+        while getgenv().AutoUpgrade == true do
+            local Event = Remotes.__remotefunction
+            Event:InvokeServer("Upgrade Process Level")
+        end
+    end)
+end
+
+function AutoRebirthFunc()
+    spawn(function()
+        while getgenv().AutoRebirth == true do
+            local Event = Remotes.__remotefunction
+            Event:InvokeServer("Rebirth")
+            task.wait(1)
+        end
+    end)
+end
 
 --[[
  __        ________   _______   ______    ________   ______    __  __    
@@ -136,7 +166,7 @@ local Toggle = AutoFarm:Toggle({
     Value = false, -- default value
     Callback = function(state) 
         getgenv().AutoCollectEggs = state
-        --Function
+        AutoCollectEggsFunc()
     end
 })
 
@@ -148,7 +178,7 @@ local Toggle = AutoFarm:Toggle({
     Value = false, -- default value
     Callback = function(state) 
         getgenv().AutoUpgrade = state
-        --Function
+        AutoUpgradeFunc()
     end
 })
 
@@ -171,8 +201,18 @@ local Toggle = AutoFarm:Toggle({
     Type = "Checkbox",
     Value = false, -- default value
     Callback = function(state) 
-        getgenv().AutoCollectEggs = state
+        getgenv().AutoCollectMoney = state
         CollectMoneyFunc()
+    end
+})
+
+local Dropdown = AutoFarm:Dropdown({
+    Title = "Chicken Buy Count",
+    Desc = "Dropdown Description",
+    Values = {"1", "5", "25", "100"},
+    Value = 1,
+    Callback = function(option) 
+        chickenCount = tonumber(option)
     end
 })
 
@@ -184,7 +224,7 @@ local Toggle = AutoFarm:Toggle({
     Value = false, -- default value
     Callback = function(state) 
         getgenv().AutoBuyChickens = state
-        --Function
+        AutoBuyChickensFunc(chickenCount)
     end
 })
 
@@ -196,7 +236,7 @@ local Toggle = AutoFarm:Toggle({
     Value = false, -- default value
     Callback = function(state) 
         getgenv().AutoMerge = state
-        --Function
+        AutoMergeFunc()
     end
 })
 
@@ -209,5 +249,17 @@ local Toggle = AutoFarm:Toggle({
     Callback = function(state) 
         getgenv().AutoObby = state
         AutoObbyFunc()
+    end
+})
+
+local Toggle = AutoFarm:Toggle({
+    Title = "Auto Rebirths",
+    Desc = "Rebirths When can",
+    Icon = "arrow-big-down-dash",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        getgenv().Rebirth = state
+        AutoRebirthFunc()
     end
 })
