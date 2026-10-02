@@ -4,12 +4,14 @@ local base = "https://raw.githubusercontent.com/ShimiYaBoi/Roblox-Lua-Scripts/re
 local url = base .. tostring(PlaceId) .. ".luau"
 
 local sucess, result = pcall(function()
+    if not sucess then
+        warn("Failed to load script for "..PlaceId)
+        if result == nil then
+            warn("Not script was made for "..PlaceId)
+        else
+            warn(result)
+        end
+    end
+
     return loadstring(game:HttpGet(url))()
 end)
-
-if not sucess then
-    warn("Failed to load script for "..PlaceId)
-    warn(result)
-end
-
---typo
