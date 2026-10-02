@@ -11,3 +11,5 @@ if not sucess then
     warn("Failed to load script for "..PlaceId)
     warn(result)
 end
+
+--typo
