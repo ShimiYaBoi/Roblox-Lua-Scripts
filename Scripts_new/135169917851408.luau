@@ -50,6 +50,7 @@ function CollectFunc()
             for _, v in ipairs(myPlot.Cards:GetChildren()) do
                 if v.PrimaryPart then
                     v.PrimaryPart.Position = hrp.Position
+                    task.wait(0.1)
                 end
             end
         end
@@ -235,7 +236,7 @@ local Toggle = AutoFarm:Toggle({
     end
 })
 
-local Dropdown = Tab:Dropdown({
+local Dropdown = AutoFarm:Dropdown({
     Title = "Noobs to buy",
     Desc = "How much to buy",
     Values = {"1", "5", "25", "100"},
