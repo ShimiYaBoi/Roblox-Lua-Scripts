@@ -48,11 +48,12 @@ function CollectFunc()
     task.spawn(function()
         while getgenv().AutoCollect == true do
             for _, v in ipairs(myPlot.Cards:GetChildren()) do
-                if v.PrimaryPart then
+                if v and v.PrimaryPart then
                     v.PrimaryPart.Position = hrp.Position
                     task.wait(0.1)
                 end
             end
+            task.wait(0.1)
         end
     end)
 end
