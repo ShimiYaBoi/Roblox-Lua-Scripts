@@ -335,7 +335,7 @@ local Settings = Window:Tab({
     Locked = false,
 })
 
-local Keybind = Tab:Keybind({
+local Keybind = Settings:Keybind({
     Title = "Toggle Menu",
     Desc = "Keybind to open ui",
     Value = "G",
