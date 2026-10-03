@@ -7,7 +7,7 @@ local sucess, result = pcall(function()
     if not sucess then
         warn("Failed to load script for "..PlaceId)
         if result == nil then
-            warn("Not script was made for "..PlaceId)
+            warn("No script was made for "..PlaceId)
         else
             warn(result)
         end
