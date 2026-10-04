@@ -1,3 +1,15 @@
+--[[
+ __       ______   ______   ________   __       ______       ________   ___   __    ______       _______    __       ______    _______   ________   __       ______      
+/_/\     /_____/\ /_____/\ /_______/\ /_/\     /_____/\     /_______/\ /__/\ /__/\ /_____/\     /______/\  /_/\     /_____/\ /_______/\ /_______/\ /_/\     /_____/\     
+\:\ \    \:::_ \ \\:::__\/ \::: _  \ \\:\ \    \::::_\/_    \::: _  \ \\::\_\\  \ \\:::_ \ \    \::::__\/__\:\ \    \:::_ \ \\::: _  \ \\::: _  \ \\:\ \    \::::_\/_    
+ \:\ \    \:\ \ \ \\:\ \  __\::(_)  \ \\:\ \    \:\/___/\    \::(_)  \ \\:. `-\  \ \\:\ \ \ \    \:\ /____/\\:\ \    \:\ \ \ \\::(_)  \/_\::(_)  \ \\:\ \    \:\/___/\   
+  \:\ \____\:\ \ \ \\:\ \/_/\\:: __  \ \\:\ \____\_::._\:\    \:: __  \ \\:. _    \ \\:\ \ \ \    \:\\_  _\/ \:\ \____\:\ \ \ \\::  _  \ \\:: __  \ \\:\ \____\_::._\:\  
+   \:\/___/\\:\_\ \ \\:\_\ \ \\:.\ \  \ \\:\/___/\ /____\:\    \:.\ \  \ \\. \`-\  \ \\:\/.:| |    \:\_\ \ \  \:\/___/\\:\_\ \ \\::(_)  \ \\:.\ \  \ \\:\/___/\ /____\:\ 
+    \_____\/ \_____\/ \_____\/ \__\/\__\/ \_____\/ \_____\/     \__\/\__\/ \__\/ \__\/ \____/_/     \_____\/   \_____\/ \_____\/ \_______\/ \__\/\__\/ \_____\/ \_____\/ 
+                                                                                                                                                                         
+]]
+
+
 ------------> Legends Of Speed / https://www.roblox.com/games/3101667897/Legends-Of-Speed
 
 local ws = game:GetService("Workspace")
@@ -19,6 +31,8 @@ local CrystalsData = {}
 local crystalToOpen
 local Areas = {}
 local AreasPos = {}
+local Pets = {}
+local PetRaritySells = {}
 
 for _, model in ipairs(ws.areaCircles:GetChildren()) do
     local areaName = model:FindFirstChild("areaName")
@@ -53,6 +67,46 @@ local function GetOrbNames()
         end
     end
     return Orbies
+end
+
+local function GetPetRarities()
+    local Tiers = {}
+
+    for _, tier in ipairs(plr.petsFolder:GetChildren()) do
+        if tier then
+            table.insert(Tiers, tier.Name)
+        end
+    end
+    return Tiers
+end
+
+for _, pet in ipairs(plr.petsFolder:GetDescendants()) do
+    if pet:IsA("StringValue") then
+        if not table.find(Pets, pet.Name) and pet.Name ~= "chosenName" then
+            table.insert(Pets, pet.Name)
+        end
+    end
+end
+
+if debug then
+    warn("Owned Pets")
+    for _,name in ipairs(Pets) do
+        print(name)
+    end
+end
+
+local function GetNil(name, id)
+    for _, obj in getnilinstances() do
+        if obj.Name == name and obj:GetDebugId() == id then
+            return obj
+        end
+    end
+end
+
+local function getId(m)
+    local id = m:GetDebugId()
+
+    return id
 end
 
 local function getCrystals()
@@ -91,6 +145,14 @@ if debug then
     end
 end
 
+PetRaritySells = GetPetRarities()
+if debug then
+    warn("Pet Tiers")
+    for _, name in ipairs(PetRaritySells) do
+        print(name)
+    end
+end
+
 if debug then warn("Loaded Map: ", plrCurrentMap) end
 
 plr.currentMap.Changed:Connect(function(map)
@@ -103,6 +165,19 @@ env.AutoCollectOrbs = false;
 env.AutoClaimFreeGifts = false;
 env.AutoClaimHoops = false;
 env.AutoOpenCrystal = false;
+env.AutoSellPetsTier = false;
+env.AutoSellPetsOwned = false;
+
+--[[
+ ______   __  __   ___   __    ______  _________  ________  ______   ___   __    ______      
+/_____/\ /_/\/_/\ /__/\ /__/\ /_____/\/________/\/_______/\/_____/\ /__/\ /__/\ /_____/\     
+\::::_\/_\:\ \:\ \\::\_\\  \ \\:::__\/\__.::.__\/\__.::._\/\:::_ \ \\::\_\\  \ \\::::_\/_    
+ \:\/___/\\:\ \:\ \\:. `-\  \ \\:\ \  __ \::\ \     \::\ \  \:\ \ \ \\:. `-\  \ \\:\/___/\   
+  \:::._\/ \:\ \:\ \\:. _    \ \\:\ \/_/\ \::\ \    _\::\ \__\:\ \ \ \\:. _    \ \\_::._\:\  
+   \:\ \    \:\_\:\ \\. \`-\  \ \\:\_\ \ \ \::\ \  /__\::\__/\\:\_\ \ \\. \`-\  \ \ /____\:\ 
+    \_\/     \_____\/ \__\/ \__\/ \_____\/  \__\/  \________\/ \_____\/ \__\/ \__\/ \_____\/ 
+                                                                                             
+]]
 
 function RebirthFunc()
     task.spawn(function()
@@ -162,6 +237,12 @@ function OpenCrystalFunc()
                 Events.openCrystalRemote:InvokeServer("openCrystal",crystalToOpen)
             else
                 --Notification
+                WindUI:Notify({
+                    Title = "Error",
+                    Content = "Crystal not Found",
+                    Duration = 5, -- 3 seconds
+                    Icon = "circle-x",
+                })
                 env.AutoOpenCrystal = false
             end
         end
@@ -174,8 +255,157 @@ function GoCityFunc(city)
 
         if not position then
             -- Notification
+            WindUI:Notify({
+                Title = "Error",
+                Content = "Area Not Found",
+                Duration = 5, -- 3 seconds
+                Icon = "circle-x",
+            })
         else
             hrp.CFrame = CFrame.new(position)
         end
     end)
 end
+
+--[[
+ __        ________   _______   ______    ________   ______    __  __    
+/_/\      /_______/\/_______/\ /_____/\  /_______/\ /_____/\  /_/\/_/\   
+\:\ \     \__.::._\/\::: _  \ \\:::_ \ \ \::: _  \ \\:::_ \ \ \ \ \ \ \  
+ \:\ \       \::\ \  \::(_)  \/_\:(_) ) )_\::(_)  \ \\:(_) ) )_\:\_\ \ \ 
+  \:\ \____  _\::\ \__\::  _  \ \\: __ `\ \\:: __  \ \\: __ `\ \\::::_\/ 
+   \:\/___/\/__\::\__/\\::(_)  \ \\ \ `\ \ \\:.\ \  \ \\ \ `\ \ \ \::\ \ 
+    \_____\/\________\/ \_______\/ \_\/ \_\/ \__\/\__\/ \_\/ \_\/  \__\/ 
+                                                                         
+]]
+
+local Window = WindUI:CreateWindow({
+    Title = "Legends of Speed",
+    Icon = "sport-shoe", -- lucide icon. optional
+    Author = "by shimixd", -- optional
+})
+
+Window:EditOpenButton({
+    Title = "Open Example UI",
+    Icon = "monitor",
+    CornerRadius = UDim.new(0,16),
+    StrokeThickness = 2,
+    Color = ColorSequence.new( -- gradient
+        Color3.fromHex("FF0F7B"), 
+        Color3.fromHex("F89B29")
+    ),
+    OnlyMobile = true,
+    Enabled = true,
+    Draggable = true,
+})
+
+local AutoFarm = Window:Tab({
+    Title = "Auto Farm",
+    Icon = "hand-coins", -- optional
+    Locked = false,
+})
+
+local Toggle = AutoFarm:Toggle({
+    Title = "Auto Rebirth",
+    Desc = " ",
+    Icon = "check",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        env.AutoRebirth = state
+        RebirthFunc()
+    end
+})
+
+local Toggle = AutoFarm:Toggle({
+    Title = "Auto Collect Orbs",
+    Desc = " ",
+    Icon = "check",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        env.AutoCollectOrbs = state
+        CollectOrbsFunc()
+    end
+})
+
+local Toggle = AutoFarm:Toggle({
+    Title = "Auto Claim Gifts",
+    Desc = "Collects Free Gift",
+    Icon = "check",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        env.AutoClaimFreeGifts = state
+        ClaimGiftsFunc()
+    end
+})
+
+local Toggle = AutoFarm:Toggle({
+    Title = "Auto Claim Hoops",
+    Desc = "",
+    Icon = "check",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        env.AutoClaimHoops = state
+        ClaimHoopsFunc()
+    end
+})
+
+local Dropdown = AutoFarm:Dropdown({
+    Title = "City",
+    Desc = "Teleport To",
+    Values = Areas,
+    Value = nil,
+    Callback = function(option) 
+        GoCityFunc(option)
+    end
+})
+
+local PetTab = Window:Tab({
+    Title = "Pets",
+    Icon = "egg", -- optional
+    Locked = false,
+})
+
+local CrystalDropdownValues = {}
+local CrystalNames = {}
+
+for _, crystal in ipairs(Crystals) do
+    local data = CrystalsData[crystal]
+
+    if data then
+        local displayName = crystal .. " - " .. data.Price .. " " .. data.Type
+
+        table.insert(CrystalDropdownValues, displayName)
+
+        CrystalNames[displayName] = crystal
+    end
+end
+
+local Dropdown = PetTab:Dropdown({
+    Title = "Crystal",
+    Desc = "To Open",
+    Values = CrystalDropdownValues,
+    Value = nil,
+    Callback = function(option)
+        local crystalName = CrystalNames[option]
+
+        if debug then print("Selected:", crystalName) end
+    end
+})
+
+local Settings = Window:Tab({
+    Title = "Settings",
+    Icon = "settings", -- optional
+    Locked = false,
+})
+
+local Keybind = Settings:Keybind({
+    Title = "Toggle Menu",
+    Desc = "Keybind to open ui",
+    Value = "F",
+    Callback = function(v)
+        Window:SetToggleKey(Enum.KeyCode[v])
+    end
+})
