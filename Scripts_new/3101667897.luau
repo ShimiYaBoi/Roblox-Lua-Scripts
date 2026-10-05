@@ -282,6 +282,21 @@ local Window = WindUI:CreateWindow({
     Title = "Legends of Speed",
     Icon = "sport-shoe", -- lucide icon. optional
     Author = "by shimixd", -- optional
+
+    User = {
+        Enabled = true,
+        Anonymous = false,
+        Callback = function()
+            --print("clicked")
+        end,
+    },
+})
+
+WindUI:Notify({
+    Title = "Loaded!",
+    Content = "Made with WindUI By .ftgs",
+    Duration = 10, -- 3 seconds
+    Icon = "heart-handshake",
 })
 
 Window:EditOpenButton({
@@ -392,6 +407,19 @@ local Dropdown = PetTab:Dropdown({
         local crystalName = CrystalNames[option]
 
         if debug then print("Selected:", crystalName) end
+    end
+})
+
+local Dropdown = Tab:Dropdown({
+    Title = "Dropdown (Multi)",
+    Desc = "Dropdown Description",
+    Values = GetPetRarities(),
+    Value = nil,
+    Multi = true,
+    AllowNone = true,
+    Callback = function(option) 
+        -- option is a table: { "Category A", "Category B" }
+        if debug then print("Categories selected: " .. game:GetService("HttpService"):JSONEncode(option)) end
     end
 })
 
