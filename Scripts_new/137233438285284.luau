@@ -151,6 +151,13 @@ end
     Author = "by shimixd", -- optional
 })
 
+WindUI:Notify({
+    Title = "Loaded!",
+    Content = "Made with WindUI By .ftgs",
+    Duration = 10, -- 3 seconds
+    Icon = "heart-handshake",
+})
+
 Window:EditOpenButton({
     Title = "Open Menu",
     Icon = "monitor",
