@@ -24,15 +24,21 @@ local maps = {}
 local plrCurrentMap = plr.currentMap.Value
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 local env = getgenv()
-local debug = true; --debugging
+local debug = false; --debugging
 local Orbs = {}
 local Crystals = {}
 local CrystalsData = {}
 local crystalToOpen
 local Areas = {}
 local AreasPos = {}
+local petFolder = plr.petsFolder
+local trailFolder = plr.trailsFolder
 local Pets = {}
+local Trails = {}
 local PetRaritySells = {}
+local TrailRaritySells = {}
+local selectedPetRaritiesToSell = {}
+local selectedTrailRaritiesToSell = {}
 
 for _, model in ipairs(ws.areaCircles:GetChildren()) do
     local areaName = model:FindFirstChild("areaName")
@@ -80,6 +86,17 @@ local function GetPetRarities()
     return Tiers
 end
 
+local function GetTrailRarities()
+    local Tiers = {}
+
+    for _, tier in ipairs(plr.trailsFolder:GetChildren()) do
+        if tier then
+            table.insert(Tiers, tier.Name)
+        end
+    end
+    return Tiers
+end
+
 for _, pet in ipairs(plr.petsFolder:GetDescendants()) do
     if pet:IsA("StringValue") then
         if not table.find(Pets, pet.Name) and pet.Name ~= "chosenName" then
@@ -95,6 +112,21 @@ if debug then
     end
 end
 
+for _, trail in ipairs(trailFolder:GetDescendants()) do
+    if trail:IsA("Trail") then
+        if not table.find(Trails, trail.Name) and trail.Name ~= "chosenName" then
+            table.insert(Trails, trail.Name)
+        end
+    end
+end
+
+if debug then
+    warn("Owned Trails")
+    for _,name in ipairs(Trails) do
+        print(name)
+    end
+end
+
 local function GetNil(name, id)
     for _, obj in getnilinstances() do
         if obj.Name == name and obj:GetDebugId() == id then
@@ -103,7 +135,7 @@ local function GetNil(name, id)
     end
 end
 
-local function getId(m)
+local function getId(m) -- waste?
     local id = m:GetDebugId()
 
     return id
@@ -149,7 +181,15 @@ PetRaritySells = GetPetRarities()
 if debug then
     warn("Pet Tiers")
     for _, name in ipairs(PetRaritySells) do
-        print(name)
+        print("Pet Tiers:", name)
+    end
+end
+
+TrailRaritySells = GetTrailRarities()
+if debug then
+    warn("Trails Tier:")
+    for _, name in ipairs(PetRaritySells) do
+        print("Trails Tiers:", name)
     end
 end
 
@@ -167,6 +207,7 @@ env.AutoClaimHoops = false;
 env.AutoOpenCrystal = false;
 env.AutoSellPetsTier = false;
 env.AutoSellPetsOwned = false;
+env.AutoSellTrailsTier = false;
 
 --[[
  ______   __  __   ___   __    ______  _________  ________  ______   ___   __    ______      
@@ -254,17 +295,142 @@ function GoCityFunc(city)
         local position = AreasPos[city]
 
         if not position then
-            -- Notification
-            WindUI:Notify({
-                Title = "Error",
-                Content = "Area Not Found",
-                Duration = 5, -- 3 seconds
-                Icon = "circle-x",
-            })
+            if debug then warn(position, " Not Found") end
         else
             hrp.CFrame = CFrame.new(position)
+            if debug then print("Location: ", city) end
         end
     end)
+end
+
+function IsRarity(tier)
+    return table.find(selectedPetRaritiesToSell, tier) ~= nil, table.find(selectedTrailRaritiesToSell, tier) ~= nil
+end
+
+function SellPetButton()
+    for _, tier in ipairs(selectedPetRaritiesToSell) do
+        if debug then
+            print("Sell Button:")
+            print("Selected Tier(s): ", tier)
+        end
+
+        local tierFolder = petFolder:FindFirstChild(tier)
+
+        if not tierFolder then
+            if debug then
+                warn("No Folder Found:", tier)
+
+                WindUI:Notify({
+                Title = "Error",
+                Content = "Selected Rarity not found: " .. tostring(tier),
+                Duration = 5,
+                Icon = "circle-x",
+                })
+
+                continue
+            end
+        end
+
+        if debug then
+            print("Found Tier Folder: ", tierFolder)
+            print("Pet Count: ", #tierFolder:GetChildren())
+        end
+
+        for _, pet in ipairs(tierFolder:GetChildren()) do
+            if debug then print("Pet: ", pet, "\nPet Name: ", pet.Name, "\nDebug Id: ", getId(pet)) end
+
+            local petName = pet.Name
+            local petId = getId(pet)
+
+            pet:Destroy()
+
+            local nilPet = GetNil(petName, petId) --Needed?
+
+            if debug then print("Nil Pet Name: ", nilPet, "\nDebugId: ", petId) end
+
+            if nilPet then
+                local Remote = Events.sellPetEvent
+
+                Remote:FireServer("sellPet", GetNil(petName, petId))
+
+                if debug then print("Pet Sell: ", petName, "\nPet Rarity: ", tier) end
+            else
+                warn("Could not find nil instance for:", petName, petId)
+            end
+        end
+    end
+end
+
+function SellTrailButton()
+    for _, tier in ipairs(selectedTrailRaritiesToSell) do
+        if debug then
+            print("Sell Button:")
+            print("Selected Tier(s): ", tier)
+        end
+
+        local tierFolder = trailFolder:FindFirstChild(tier)
+
+        if not tierFolder then
+            if debug then
+                warn("No Folder Found:", tier)
+
+                WindUI:Notify({
+                Title = "Error",
+                Content = "Selected Rarity not found: " .. tostring(tier),
+                Duration = 5,
+                Icon = "circle-x",
+                })
+
+                continue
+            end
+        end
+
+        if debug then
+            print("Found Tier Folder: ", tierFolder)
+            print("Trails Count: ", #tierFolder:GetChildren())
+        end
+
+        for _, trail in ipairs(tierFolder:GetChildren()) do
+            if debug then print("Trail: ", trail, "\nPet Name: ", trail.Name, "\nDebug Id: ", getId(trail)) end
+
+            local trailName = trail.Name
+            local trailId = getId(trail)
+
+            trail:Destroy()
+
+            local niltrail = GetNil(trailName, trailId) --Needed?
+
+            if debug then print("Nil trail Name: ", niltrail, "\nDebugId: ", trailId) end
+
+            if niltrail then
+                local Remote = Events.sellTrailEvent
+
+                Remote:FireServer("sellTrail", GetNil(trailName, trailId))
+
+                if debug then print("Trail Sell: ", trailName, "\nTrail Rarity: ", tier) end
+            else
+                warn("Could not find nil instance for:", trailName, trailId)
+            end
+        end
+    end
+end
+
+function SellPetFunc()
+    task.spawn(function()
+        while env.AutoSellPetsTier == true do
+        SellPetButton()
+        task.wait(0.1)
+        end
+    end)    
+end
+
+function SellTrailFunc()
+    task.spawn(function()
+        while env.AutoSellTrailsTier == true do
+        SellTrailButton()
+        task.wait(0.1)
+        end
+    end)    
 end
 
 --[[
@@ -283,13 +449,13 @@ local Window = WindUI:CreateWindow({
     Icon = "sport-shoe", -- lucide icon. optional
     Author = "by shimixd", -- optional
 
-    User = {
+--[[    User = {
         Enabled = true,
         Anonymous = false,
         Callback = function()
             --print("clicked")
         end,
-    },
+    },]]
 })
 
 WindUI:Notify({
@@ -406,22 +572,94 @@ local Dropdown = PetTab:Dropdown({
     Callback = function(option)
         local crystalName = CrystalNames[option]
 
+        crystalToOpen = crystalName
         if debug then print("Selected:", crystalName) end
     end
 })
 
-local Dropdown = Tab:Dropdown({
-    Title = "Dropdown (Multi)",
-    Desc = "Dropdown Description",
+local Toggle = PetTab:Toggle({
+    Title = "Auto Open Crystal",
+    Desc = "",
+    Icon = "check",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        env.AutoOpenCrystal = state
+        OpenCrystalFunc()
+    end
+})
+
+local Dropdown = PetTab:Dropdown({
+    Title = "Pet Rarities To Sell",
+    Desc = "",
     Values = GetPetRarities(),
     Value = nil,
     Multi = true,
     AllowNone = true,
     Callback = function(option) 
-        -- option is a table: { "Category A", "Category B" }
+        selectedPetRaritiesToSell = option
         if debug then print("Categories selected: " .. game:GetService("HttpService"):JSONEncode(option)) end
     end
 })
+
+local Dropdown = PetTab:Dropdown({
+    Title = "Trails Rarities To Sell",
+    Desc = "",
+    Values = GetTrailRarities(),
+    Value = nil,
+    Multi = true,
+    AllowNone = true,
+    Callback = function(option) 
+        selectedTrailRaritiesToSell = option
+        if debug then print("Categories selected: " .. game:GetService("HttpService"):JSONEncode(option)) end
+    end
+})
+
+local Toggle = PetTab:Toggle({
+    Title = "Auto Sell Pets Rarity",
+    Desc = "",
+    Icon = "check",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        env.AutoSellPetsTier = state
+        SellPetFunc()
+    end
+})
+
+local Toggle = PetTab:Toggle({
+    Title = "Auto Sell Trails Rarity",
+    Desc = "",
+    Icon = "check",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        env.AutoSellTrailsTier = state
+        SellTrailFunc()
+    end
+})
+
+if debug then
+    local Button = PetTab:Button({
+        Title = "Sell Pet Rarity",
+        Desc = "Test Button",
+        Locked = false,
+        Callback = function()
+            SellPetButton()
+        end
+    })
+end
+
+if debug then
+    local Button = PetTab:Button({
+        Title = "Sell Trails Rarity",
+        Desc = "Test Button",
+        Locked = false,
+        Callback = function()
+            SellTrailButton()
+        end
+    })
+end
 
 local Settings = Window:Tab({
     Title = "Settings",
