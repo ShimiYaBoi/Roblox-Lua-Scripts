@@ -33,8 +33,6 @@ local Areas = {}
 local AreasPos = {}
 local petFolder = plr.petsFolder
 local trailFolder = plr.trailsFolder
-local Pets = {}
-local Trails = {}
 local PetRaritySells = {}
 local TrailRaritySells = {}
 local selectedPetRaritiesToSell = {}
@@ -95,36 +93,6 @@ local function GetTrailRarities()
         end
     end
     return Tiers
-end
-
-for _, pet in ipairs(plr.petsFolder:GetDescendants()) do
-    if pet:IsA("StringValue") then
-        if not table.find(Pets, pet.Name) and pet.Name ~= "chosenName" then
-            table.insert(Pets, pet.Name)
-        end
-    end
-end
-
-if debug then
-    warn("Owned Pets")
-    for _,name in ipairs(Pets) do
-        print(name)
-    end
-end
-
-for _, trail in ipairs(trailFolder:GetDescendants()) do
-    if trail:IsA("Trail") then
-        if not table.find(Trails, trail.Name) and trail.Name ~= "chosenName" then
-            table.insert(Trails, trail.Name)
-        end
-    end
-end
-
-if debug then
-    warn("Owned Trails")
-    for _,name in ipairs(Trails) do
-        print(name)
-    end
 end
 
 local function GetNil(name, id)
@@ -206,7 +174,6 @@ env.AutoClaimFreeGifts = false;
 env.AutoClaimHoops = false;
 env.AutoOpenCrystal = false;
 env.AutoSellPetsTier = false;
-env.AutoSellPetsOwned = false;
 env.AutoSellTrailsTier = false;
 
 --[[
@@ -598,7 +565,7 @@ local Dropdown = PetTab:Dropdown({
     AllowNone = true,
     Callback = function(option) 
         selectedPetRaritiesToSell = option
-        if debug then print("Categories selected: " .. game:GetService("HttpService"):JSONEncode(option)) end
+        if debug then print("Pet Categories selected: " .. game:GetService("HttpService"):JSONEncode(option)) end
     end
 })
 
@@ -611,7 +578,7 @@ local Dropdown = PetTab:Dropdown({
     AllowNone = true,
     Callback = function(option) 
         selectedTrailRaritiesToSell = option
-        if debug then print("Categories selected: " .. game:GetService("HttpService"):JSONEncode(option)) end
+        if debug then print("Trails Categories selected: " .. game:GetService("HttpService"):JSONEncode(option)) end
     end
 })
 
