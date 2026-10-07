@@ -15,16 +15,16 @@
 local ws = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local plr = Players.LocalPlayer
-local char = plr.Character
-local hum = char.Humanoid
-local hrp = char.HumanoidRootPart
+local char 
+local hum 
+local hrp 
 local RS = game:GetService("ReplicatedStorage")
 local Events = RS.rEvents
 local maps = {}
 local plrCurrentMap = plr.currentMap.Value
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 local env = getgenv()
-local debug = false; --debugging
+local debug = true; --debugging
 local Orbs = {}
 local Crystals = {}
 local CrystalsData = {}
@@ -49,6 +49,33 @@ for _, model in ipairs(ws.areaCircles:GetChildren()) do
 
         AreasPos[areaName.Value] = circle.Position + Vector3.new(0,5,0)
     end
+end
+
+local function UpdateCharacter(character)
+    char = character
+    hum = character:WaitForChild("Humanoid")
+    hrp = character:WaitForChild("HumanoidRootPart")
+end
+
+if plr.Character then
+    UpdateCharacter(plr.Character)
+end
+
+plr.CharacterAdded:Connect(function(character)
+    UpdateCharacter(character)
+
+    if debug then
+        print("Character respawned - references updated")
+    end
+end)
+
+local function GetCharacter()
+    return plr.Character or plr.CharacterAdded:Wait()
+end
+
+local function GetHRP()
+    local character = GetCharacter()
+    return character:WaitForChild("HumanoidRootPart")
 end
 
 if debug then
@@ -175,6 +202,17 @@ env.AutoClaimHoops = false;
 env.AutoOpenCrystal = false;
 env.AutoSellPetsTier = false;
 env.AutoSellTrailsTier = false;
+env.AutoFinishRaces = false;
+
+local Running = {
+    Rebirth = false,
+    Orbs = false,
+    Gifts = false,
+    Hoops = false,
+    Crystal = false,
+    Pets = false,
+    Trails = false,
+}
 
 --[[
  ______   __  __   ___   __    ______  _________  ________  ______   ___   __    ______      
@@ -188,15 +226,25 @@ env.AutoSellTrailsTier = false;
 ]]
 
 function RebirthFunc()
+    if Running.Rebirth then return end
+
+    Running.Rebirth = true
+
     task.spawn(function()
         while env.AutoRebirth == true do
             task.wait(0.3)
             Events.rebirthEvent:FireServer("rebirthRequest")
         end
+
+        Running.Rebirth = false
     end)
 end
 
 function CollectOrbsFunc()
+    if Running.Orbs then return end
+
+    Running.Orbs = true
+
     task.spawn(function()
         while env.AutoCollectOrbs == true do
             task.wait(0.1)
@@ -208,10 +256,16 @@ function CollectOrbsFunc()
                 end
             end
         end
+
+        Running.Orbs = false
     end)
 end
 
 function ClaimGiftsFunc()
+    if Running.Gifts then return end
+
+    Running.Gifts = true
+
     task.spawn(function()
         while env.AutoClaimFreeGifts == true do
             task.wait(1)
@@ -219,25 +273,39 @@ function ClaimGiftsFunc()
                 Events.freeGiftClaimRemote:InvokeServer("claimGift", i)
             end
         end
+        Running.Gifts = false
     end)
 end
 
 function ClaimHoopsFunc()
+    if Running.Hoops then return end
+
+    Running.Hoops = true
+
+
     task.spawn(function()
         while env.AutoClaimHoops == true do
            task.wait(0.1)
+
+           local root = GetHRP()
+
            for _, hoop in ipairs(ws.Hoops:GetChildren()) do
             if hoop then
-                firetouchinterest(hoop, hrp, false)
+                firetouchinterest(hoop, root, false)
                 task.wait(0.1)
-                firetouchinterest(hoop, hrp, true)
+                firetouchinterest(hoop, root, true)
             end
            end
         end
+        Running.Hoops = false
     end)
 end
 
 function OpenCrystalFunc()
+    if Running.Crystal then return end
+
+    Running.Crystal = true
+
     task.spawn(function()
         while env.AutoOpenCrystal == true do
             task.wait(0.5)
@@ -254,6 +322,7 @@ function OpenCrystalFunc()
                 env.AutoOpenCrystal = false
             end
         end
+        Running.Crystal = false
     end)
 end
 
@@ -264,7 +333,8 @@ function GoCityFunc(city)
         if not position then
             if debug then warn(position, " Not Found") end
         else
-            hrp.CFrame = CFrame.new(position)
+            local root = GetHRP()
+            root.CFrame = CFrame.new(position)
             if debug then print("Location: ", city) end
         end
     end)
@@ -383,21 +453,86 @@ function SellTrailButton()
 end
 
 function SellPetFunc()
+    if Running.Pets then return end
+
+    Running.Pets = true
+
     task.spawn(function()
         while env.AutoSellPetsTier == true do
-        SellPetButton()
-        task.wait(0.1)
+            SellPetButton()
+            task.wait(0.1)
         end
+        Running.Pets = false
     end)    
 end
 
 function SellTrailFunc()
+    if Running.Trails then return end
+
+    Running.Trails = true
+
     task.spawn(function()
         while env.AutoSellTrailsTier == true do
         SellTrailButton()
         task.wait(0.1)
         end
+        Running.Trails = false
     end)    
+end
+
+function FinishRaceFunc()
+    if getgenv().FinishConnection then
+        getgenv().FinishConnection:Disconnect()
+        getgenv().FinishConnection = nil
+    end
+
+    getgenv().FinishConnection = Events.raceEvent.OnClientEvent:Connect(function(event, map)
+        if env.AutoFinishRaces ~= true then
+            return
+        end
+
+        if event == "raceStarting" then
+            if debug then print("New Race Initializing: ", map) end
+            plr.PlayerGui.gameGui.raceJoinLabel.Visible = false
+            Events.raceEvent:FireServer("joinRace")
+            getgenv().racingMap = map
+            if debug then print("HumanoidRootPart Position: ", hrp.Position) end
+        end
+
+        if event == "beginRace" then
+            if debug then print("Race Started") end
+
+            local mapToFind = getgenv().racingMap
+            if not mapToFind then
+                warn("No 'Race Map' saved")
+                return
+            end
+
+            local RaceMap = ws.raceMaps:FindFirstChild(tostring(mapToFind))
+            if not RaceMap then
+                warn("No race map found")
+                return
+            end
+
+            local finishLine = RaceMap:FindFirstChild("finishPart")
+            if not finishLine then
+                warn("Finish line not found in: ", RaceMap)
+                return
+            end
+
+            local chara = plr.Character or plr.CharacterAdded:Wait()
+
+            local root = chara:FindFirstChild("HumanoidRootPart")
+            if not root then
+                warn("No HumanoidRootPart found")
+                return
+            end
+
+            root.CFrame = finishLine.CFrame + Vector3.new(0, 3, 0)
+            if debug then print("Teleported to: ", finishLine.Position) end
+        end
+    end)
+    if debug then print("Auto Finish: ", env.AutoFinishRaces and "On" or "Off") end
 end
 
 --[[
@@ -460,7 +595,9 @@ local Toggle = AutoFarm:Toggle({
     Value = false, -- default value
     Callback = function(state) 
         env.AutoRebirth = state
-        RebirthFunc()
+        if state then
+            RebirthFunc()
+        end
     end
 })
 
@@ -472,7 +609,9 @@ local Toggle = AutoFarm:Toggle({
     Value = false, -- default value
     Callback = function(state) 
         env.AutoCollectOrbs = state
-        CollectOrbsFunc()
+        if state then
+            CollectOrbsFunc()
+        end
     end
 })
 
@@ -484,7 +623,9 @@ local Toggle = AutoFarm:Toggle({
     Value = false, -- default value
     Callback = function(state) 
         env.AutoClaimFreeGifts = state
-        ClaimGiftsFunc()
+        if state then
+            ClaimGiftsFunc()
+        end
     end
 })
 
@@ -496,7 +637,21 @@ local Toggle = AutoFarm:Toggle({
     Value = false, -- default value
     Callback = function(state) 
         env.AutoClaimHoops = state
-        ClaimHoopsFunc()
+        if state then 
+            ClaimHoopsFunc()
+        end
+    end
+})
+
+local Toggle = AutoFarm:Toggle({
+    Title = "Auto Finish Races",
+    Desc = " ",
+    Icon = "check",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        env.AutoFinishRaces = state
+        FinishRaceFunc()
     end
 })
 
@@ -552,7 +707,9 @@ local Toggle = PetTab:Toggle({
     Value = false, -- default value
     Callback = function(state) 
         env.AutoOpenCrystal = state
-        OpenCrystalFunc()
+        if state then
+            OpenCrystalFunc()
+        end
     end
 })
 
@@ -590,7 +747,9 @@ local Toggle = PetTab:Toggle({
     Value = false, -- default value
     Callback = function(state) 
         env.AutoSellPetsTier = state
-        SellPetFunc()
+        if state then
+            SellPetFunc()
+        end
     end
 })
 
@@ -602,7 +761,9 @@ local Toggle = PetTab:Toggle({
     Value = false, -- default value
     Callback = function(state) 
         env.AutoSellTrailsTier = state
-        SellTrailFunc()
+        if state then
+            SellTrailFunc()
+        end
     end
 })
 
