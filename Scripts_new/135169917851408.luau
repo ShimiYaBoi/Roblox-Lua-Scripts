@@ -14,8 +14,8 @@
 local ws = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local plr = Players.LocalPlayer
-local char = plr.Character
-local hrp = char.HumanoidRootPart
+local char
+local hrp 
 local RS = game:GetService("ReplicatedStorage")
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 local plotModule = require(game:GetService("ReplicatedStorage").Shared.PlotPresence)
@@ -44,12 +44,35 @@ getgenv().AutoRebirth = false;
                                                                                              
 ]]
 
+local function UpdateCharacter(character)
+    char = character
+    hrp = character:WaitForChild("HumanoidRootPart")
+end
+
+if plr.Character then
+    UpdateCharacter(plr.Character)
+end
+
+plr.CharacterAdded:Connect(function(character)
+    UpdateCharacter(character)
+end)
+
+local function GetCharacter()
+    return plr.Character or plr.CharacterAdded:Wait()
+end
+
+local function GetHRP()
+    local character = GetCharacter()
+    return character:WaitForChild("HumanoidRootPart")
+end
+
 function CollectFunc()
     task.spawn(function()
         while getgenv().AutoCollect == true do
             for _, v in ipairs(myPlot.Cards:GetChildren()) do
                 if v and v.PrimaryPart then
-                    v.PrimaryPart.Position = hrp.Position
+                    local root = GetHRP()
+                    v.PrimaryPart.Position = root.Position
                     task.wait(0.1)
                 end
             end
@@ -61,9 +84,10 @@ end
 function ConvertFunc()
     task.spawn(function()
         while getgenv().AutoConvert == true do
-            firetouchinterest(myPlot.Buttons.ConvertButton.TouchPart, hrp, false)
+            local root = GetHRP()
+            firetouchinterest(myPlot.Buttons.ConvertButton.TouchPart, root, false)
             task.wait(0.1)
-            firetouchinterest(myPlot.Buttons.ConvertButton.TouchPart, hrp, true)
+            firetouchinterest(myPlot.Buttons.ConvertButton.TouchPart, root, true)
         end
     end)
 end
@@ -71,9 +95,10 @@ end
 function CollectCashFunc()
     task.spawn(function()
         while getgenv().AutoCollectCash == true do
-            firetouchinterest(myPlot.Buttons.CollectButton.TouchPart, hrp, false)
+            local root = GetHRP()
+            firetouchinterest(myPlot.Buttons.CollectButton.TouchPart, root, false)
             task.wait(0.1)
-            firetouchinterest(myPlot.Buttons.CollectButton.TouchPart, hrp, true)
+            firetouchinterest(myPlot.Buttons.CollectButton.TouchPart, root, true)
         end
     end)
 end
@@ -81,9 +106,10 @@ end
 function UpgradeConvertFunc()
     task.spawn(function()
         while getgenv().AutoUpgradeConvert == true do
-            firetouchinterest(myPlot.Buttons.Upgrade1.TouchPart, hrp, false)
+            local root = GetHRP()
+            firetouchinterest(myPlot.Buttons.Upgrade1.TouchPart, root, false)
             task.wait(0.1)
-            firetouchinterest(myPlot.Buttons.Upgrade1.TouchPart, hrp, true)
+            firetouchinterest(myPlot.Buttons.Upgrade1.TouchPart, root, true)
         end
     end)
 end
@@ -91,22 +117,23 @@ end
 function BuyNoobsFunc()
     task.spawn(function()
         while getgenv().AutoBuyNoobs == true do
+            local root = GetHRP()
             if buyCount == 1 then
-                firetouchinterest(myPlot.Buttons.Button1.TouchPart, hrp, false)
+                firetouchinterest(myPlot.Buttons.Button1.TouchPart, root, false)
                 task.wait(0.1)
-                firetouchinterest(myPlot.Buttons.Button1.TouchPart, hrp, true)
+                firetouchinterest(myPlot.Buttons.Button1.TouchPart, root, true)
             elseif buyCount == 5 then
-                firetouchinterest(myPlot.Buttons.Button2.TouchPart, hrp, false)
+                firetouchinterest(myPlot.Buttons.Button2.TouchPart, root, false)
                 task.wait(0.1)
-                firetouchinterest(myPlot.Buttons.Button2.TouchPart, hrp, true)
+                firetouchinterest(myPlot.Buttons.Button2.TouchPart, root, true)
             elseif buyCount == 25 then
-                firetouchinterest(myPlot.Buttons.Button3.TouchPart, hrp, false)
+                firetouchinterest(myPlot.Buttons.Button3.TouchPart, root, false)
                 task.wait(0.1)
-                firetouchinterest(myPlot.Buttons.Button3.TouchPart, hrp, true)
+                firetouchinterest(myPlot.Buttons.Button3.TouchPart, root, true)
             elseif buyCount == 100 then
-                firetouchinterest(myPlot.Buttons.Button4.TouchPart, hrp, false)
+                firetouchinterest(myPlot.Buttons.Button4.TouchPart, root, false)
                 task.wait(0.1)
-                firetouchinterest(myPlot.Buttons.Button4.TouchPart, hrp, true)
+                firetouchinterest(myPlot.Buttons.Button4.TouchPart, root, true)
             end
         end
     end)
@@ -115,9 +142,10 @@ end
 function MergeFunc()
     task.spawn(function()
         while getgenv().AutoUpgradeConvert == true do
-            firetouchinterest(myPlot.Buttons.MergeButton.TouchPart, hrp, false)
+            local root = GetHRP()
+            firetouchinterest(myPlot.Buttons.MergeButton.TouchPart, root, false)
             task.wait(0.1)
-            firetouchinterest(myPlot.Buttons.MergeButton.TouchPart, hrp, true)
+            firetouchinterest(myPlot.Buttons.MergeButton.TouchPart, root, true)
         end
     end)
 end
@@ -125,9 +153,10 @@ end
 function UpgradeNoobsFunc()
     task.spawn(function()
         while getgenv().AutoUpgradeConvert == true do
-            firetouchinterest(myPlot.Buttons.Upgrade2.TouchPart, hrp, false)
+            local root = GetHRP()
+            firetouchinterest(myPlot.Buttons.Upgrade2.TouchPart, root, false)
             task.wait(0.1)
-            firetouchinterest(myPlot.Buttons.Upgrade2.TouchPart, hrp, true)
+            firetouchinterest(myPlot.Buttons.Upgrade2.TouchPart, root, true)
         end
     end)
 end
