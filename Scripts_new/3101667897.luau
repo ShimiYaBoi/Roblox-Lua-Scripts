@@ -37,6 +37,7 @@ local PetRaritySells = {}
 local TrailRaritySells = {}
 local selectedPetRaritiesToSell = {}
 local selectedTrailRaritiesToSell = {}
+local selectedPetsToEvolve = {}
 
 for _, model in ipairs(ws.areaCircles:GetChildren()) do
     local areaName = model:FindFirstChild("areaName")
@@ -86,6 +87,26 @@ if debug then
     warn("Areas Table")
     for _, name in ipairs(Areas) do
         print("Area Name: ", name)
+    end
+end
+
+local function getPet()
+    local pets = {}
+
+    for _, name in ipairs(RS:FindFirstChild("cPetShopFolder"):GetChildren()) do
+        if not name:FindFirstChild("isTrail") then
+            table.insert(pets, name.Name)
+        end
+    end
+    return pets
+end
+
+local petsTable = getPet()
+
+if debug then
+    warn("ReplicatedStorage Pets:\n")
+    for _, p in ipairs(petsTable) do
+        print("RS Pet: " .. tostring(p))
     end
 end
 
@@ -203,6 +224,7 @@ env.AutoOpenCrystal = false;
 env.AutoSellPetsTier = false;
 env.AutoSellTrailsTier = false;
 env.AutoFinishRaces = false;
+env.AutoEvolve = false;
 
 local Running = {
     Rebirth = false,
@@ -212,6 +234,7 @@ local Running = {
     Crystal = false,
     Pets = false,
     Trails = false,
+    Evolve = false,
 }
 
 --[[
@@ -398,6 +421,43 @@ function SellPetButton()
     end
 end
 
+function evolvePetButton()
+    if not petFolder then
+        WindUI:Notify({
+            Title = "Error",
+            Content = "Owned Pets Folder not Found",
+            Duration = 5,
+            Icon = "circle-x",
+        })
+    end
+
+    local petCount = {}
+
+    for _, pet in ipairs(petFolder:GetDescendants()) do
+        if pet:IsA("StringValue") and pet.Name ~= "chosenName" then
+            if debug then
+                print("Owned Pet: " .. tostring(pet))
+            end
+
+            if not pet:FindFirstChild("evolved") then
+                petCount[pet.Name] = (petCount[pet.Name] or 0) + 1
+            end
+
+            for _, petName in ipairs(selectedPetsToEvolve) do
+                local count = petCount[petName] or 0
+
+                if debug then print(petName .. " X " .. count) end
+
+                if count >= 4 then
+                    Events.petEvolveEvent:FireServer("evolvePet", petName)
+                else
+                    if debug then warn("Not enough " .. petName .. "\n Have " .. count .. "/5") end
+                end
+            end
+        end
+    end
+end
+
 function SellTrailButton()
     for _, tier in ipairs(selectedTrailRaritiesToSell) do
         if debug then
@@ -466,6 +526,20 @@ function SellPetFunc()
     end)    
 end
 
+function EvolvePetsFunc()
+    if Running.Evolve then return end
+
+    Running.Evolve = true
+
+    task.spawn(function()
+        while env.AutoEvolve == true do
+            evolvePetButton()
+            task.wait(0.1)
+        end
+        Running.Evolve = false
+    end)    
+end
+
 function SellTrailFunc()
     if Running.Trails then return end
 
@@ -495,8 +569,10 @@ function FinishRaceFunc()
             if debug then print("New Race Initializing: ", map) end
             plr.PlayerGui.gameGui.raceJoinLabel.Visible = false
             Events.raceEvent:FireServer("joinRace")
+            plr.PlayerGui.gameGui.raceJoinLabel.Visible = false
             getgenv().racingMap = map
             if debug then print("HumanoidRootPart Position: ", hrp.Position) end
+            plr.PlayerGui.gameGui.raceJoinLabel.Visible = false
         end
 
         if event == "beginRace" then
@@ -666,7 +742,7 @@ local Dropdown = AutoFarm:Dropdown({
 })
 
 local PetTab = Window:Tab({
-    Title = "Pets",
+    Title = "Pets & Trails",
     Icon = "egg", -- optional
     Locked = false,
 })
@@ -767,6 +843,33 @@ local Toggle = PetTab:Toggle({
     end
 })
 
+local Dropdown = PetTab:Dropdown({
+    Title = "Pets To Evolve",
+    Desc = "",
+    Values = getPet(),
+    Value = nil,
+    Multi = true,
+    AllowNone = true,
+    Callback = function(option) 
+        selectedPetsToEvolve = option
+        if debug then print("Pet Evolve Categories selected: " .. game:GetService("HttpService"):JSONEncode(option)) end
+    end
+})
+
+local Toggle = PetTab:Toggle({
+    Title = "Auto Evolve Pets",
+    Desc = "",
+    Icon = "check",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        env.AutoEvolve = state
+        if state then
+            EvolvePetsFunc()
+        end
+    end
+})
+
 if debug then
     local Button = PetTab:Button({
         Title = "Sell Pet Rarity",
@@ -785,6 +888,17 @@ if debug then
         Locked = false,
         Callback = function()
             SellTrailButton()
+        end
+    })
+end
+
+if debug then
+    local Button = PetTab:Button({
+        Title = "Evolve Pets",
+        Desc = "Test Button",
+        Locked = false,
+        Callback = function()
+            evolvePetButton()
         end
     })
 end
