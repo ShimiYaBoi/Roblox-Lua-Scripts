@@ -1,3 +1,20 @@
 {
-    "luau-lsp.studioPlugin.enabled": false
+    "luau-lsp.studioPlugin.enabled": false,
+
+        "editor.quickSuggestions": {
+        "other": true,
+        "comments": false,
+        "strings": false
+    },
+    "js/ts.suggest.names": true,
+        "editor.acceptSuggestionOnCommitCharacter": true,
+        "editor.acceptSuggestionOnEnter": "on",
+        "editor.suggestOnTriggerCharacters": true,
+        "[luau]": {
+            "js/ts.suggest.enabled": true,
+            "editor.acceptSuggestionOnEnter": "on",
+            "js/ts.suggest.names": true,
+        }
+        
+
 }
