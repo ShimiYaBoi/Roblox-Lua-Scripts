@@ -9,7 +9,7 @@
                                                                                                                                                                          
 ]]
 
--------> +1 Swordwave Legend / https://www.roblox.com/games/113220849219354/1-Swordwave-Legend
+-------> +1 Swordwave Legend / https://www.roblox.com/games/113220849219354/1-Swordwave-Legend <---- Update!!!
 
 
 local ws = game:GetService("Workspace")
