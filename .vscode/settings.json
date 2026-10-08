@@ -38,4 +38,5 @@
     "luau-lsp.completion.imports.suggestServices": true,
     "luau-lsp.completion.autocompleteEnd": true,
     "luau-lsp.completion.showKeywords": true,
+    "luau-lsp.platform.type": "roblox",
 }
