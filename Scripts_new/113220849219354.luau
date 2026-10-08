@@ -170,6 +170,20 @@ local Window = WindUI:CreateWindow({
     Author = "by shimixd", -- optional
 })
 
+WindUI:Popup({
+    Title = "Currently Not Updated",
+    Icon = "Some features might not work needs to be updated",
+    Content = "Popup content",
+    Buttons = {
+        {
+            Title = "Understood",
+            Icon = "arrow-right",
+            Callback = function() end,
+            Variant = "Primary",
+        }
+    }
+})
+
 WindUI:Notify({
     Title = "Loaded!",
     Content = "Made with WindUI By .ftgs",
@@ -218,7 +232,7 @@ local Input = AutoFarm:Input({
     Placeholder = "",
     Callback = function(input) 
         if input and input % 1 == 0 then
-            input = math.clamp(input, 1, 140)
+            input = math.clamp(input, 1, 220)
             WinToFarm = input
         else
             WindUI:Popup({
