@@ -53,6 +53,33 @@ getgenv().AutoWin = false;
                                                                                              
 ]]
 
+local function UpdateCharacter(character)
+    char = character
+    hum = character:WaitForChild("Humanoid")
+    hrp = character:WaitForChild("HumanoidRootPart")
+end
+
+if plr.Character then
+    UpdateCharacter(plr.Character)
+end
+
+plr.CharacterAdded:Connect(function(character)
+    UpdateCharacter(character)
+
+    if debug then
+        print("Character respawned - references updated")
+    end
+end)
+
+local function GetCharacter()
+    return plr.Character or plr.CharacterAdded:Wait()
+end
+
+local function GetHRP()
+    local character = GetCharacter()
+    return character:WaitForChild("HumanoidRootPart")
+end
+
 function AutoSpeedFunc()
     spawn(function()
         while getgenv().Autospeed == true do wait(0.1)
@@ -101,6 +128,8 @@ function TeleportToWin(num)
     if num then
         local button = WinsLocation:FindFirstChild(num)
         if button then
+            local char = GetCharacter()
+
             char:PivotTo(button:GetPivot())
         end
     end
@@ -141,7 +170,7 @@ Window:EditOpenButton({
         Color3.fromHex("FF0F7B"), 
         Color3.fromHex("F89B29")
     ),
-    OnlyMobile = false,
+    OnlyMobile = true,
     Enabled = true,
     Draggable = true,
 })
