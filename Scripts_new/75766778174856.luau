@@ -11,14 +11,17 @@ local Airflow = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pooki
 local char, hum, hrp
 local env = getgenv()
 local UpgradeGroup1 = {"moreMoney", "fasterMoney", "speedBuff"}
+local UpgradeGroup2 = {"glyphBulk", "fasterRolling", "glyphLuck"}
 
 env.AutoBuyStairs = false;
 env.AutoUpgrade1 = false;
+env.AutoUpgrade2 = false;
 env.SelectedMulti = nil;
 
 local Running = {
     Stairs = false,
     Upgrades1 = false,
+    Upgrades2 = false,
 
 }
 
@@ -77,7 +80,7 @@ function BuyUpgrades1Func()
     task.spawn(function()
         if Running.Upgrades1 then return end
 
-        Running.Upgrades = true
+        Running.Upgrades1 = true
 
         while env.AutoUpgrade1 == true do
             for _, upg in pairs(UpgradeGroup1) do
@@ -89,7 +92,27 @@ function BuyUpgrades1Func()
             task.wait(0.2)
         end
 
-        Running.Upgrades = false
+        Running.Upgrades1 = false
+    end)
+end
+
+function BuyUpgrades2Func()
+    task.spawn(function()
+        if Running.Upgrades2 then return end
+
+        Running.Upgrades2 = true
+
+        while env.AutoUpgrade2 == true do
+            for _, upg in pairs(UpgradeGroup2) do
+                if Remotes and Remotes:FindFirstChild("BuyUpgrade") then
+                    if debug then print("[Debug] Fired Upgrade Remote with: " .. upg .. " With Multi: " .. tostring(env.SelectedMulti)) end
+                    Remotes:FindFirstChild("BuyUpgrade"):FireServer(upg, env.SelectedMulti)
+                end
+            end
+            task.wait(0.2)
+        end
+
+        Running.Upgrades2 = false
     end)
 end
 
@@ -172,8 +195,31 @@ local Button = AutoFarmTab:CreateButton({
     end,
 })
 
+local Button = AutoFarmTab:CreateButton({
+    Name = "Open Trail Shop",
+    Desc = "",
+    Icon = "store",
+    Style = "Primary",
+    Callback = function()
+        plr.PlayerGui:FindFirstChild("Main").Trails.Visible = true
+    end,
+})
+
 local Toggle = AutoFarmTab:CreateToggle({
     Name = "Auto Buy Upgrades1",
+    Desc = "2nd upgrade group",
+    CurrentValue = false,
+    Flag = "AutoBuyUpgrade2",
+    Callback = function(state)
+        env.AutoUpgrade2 = state
+        if state then
+            BuyUpgrades2Func()()
+        end
+    end,
+})
+
+local Toggle = AutoFarmTab:CreateToggle({
+    Name = "Auto Buy Glyph Upgrades",
     Desc = "1st upgrade group",
     CurrentValue = false,
     Flag = "AutoBuyUpgrade1",
