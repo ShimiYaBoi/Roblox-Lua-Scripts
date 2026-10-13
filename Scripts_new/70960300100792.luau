@@ -7,22 +7,28 @@ local debug = true
 local Airflow = loadstring(game:HttpGet("https://raw.githubusercontent.com/PookiePepelsss/Airflow-UI/refs/heads/main/Source.luau"))()
 local Remotes = RS:FindFirstChild("Remotes")
 local env = getgenv()
+local CashToggle, RebirthToggle, CoinsToggle
 
 env.AutoDropper = false;
 env.MaxUpgrade = false;
 env.AutoUpgrade1 = false;
 env.AutoRebirth = false;
 env.AutoUpgrade2 = false;
+env.AutoCollectCoins = false;
+env.AutoUpgradeCoins = false;
 
 local Running = {
     Dropper = false;
     AutoUpgrade1 = false;
     Rebirth = false;
     AutoUpgrade2 = false;
+    Coins = false;
+    AutoUpgradeCoins = false;
 }
 
 local CashSelectedUpgrades = {}
 local RebirthSelectedUpgrades = {}
+local CoinsSelectedUpgrades = {}
 
 local UpgradePrefixes = {
     Cash = {
@@ -34,6 +40,11 @@ local UpgradePrefixes = {
         ["More Cash"] = "RebirthMoreCash";
         ["More XP"] = "RebirthMoreXP";
         ["More RP"] = "RebirthMoreRebirthPoints"
+    },
+    Coins = {
+        ["More Cash"] = "CoinsMoreCash";
+        ["More XP"] = "CoinsMoreXP";
+        ["Faster Spawn"] = "CoinsFasterSpawn"
     }
 }
 
@@ -122,7 +133,7 @@ function UpgradeFunc(group, upgrade, max)
     Event:FireServer(group, prefix, max)
 end
 
-function CreateAutoUpgradeToggle(tab, group, upgrade, toggleId)
+function CreateAutoUpgradeToggle(tab, group, upgrade, toggleId, delayOffset, onEnabledCallback)
     local toggle = tab:CreateToggle({
         Name = "Auto Upgrade",
         Desc = "",
@@ -130,6 +141,10 @@ function CreateAutoUpgradeToggle(tab, group, upgrade, toggleId)
         Callback = function(state)
             env[toggleId] = state
             if debug then print("[Debug] Global: ", toggleId, " Switched To: ", state) end
+
+            if state and onEnabledCallback then
+                onEnabledCallback()
+            end
 
             if not state then
                 return
@@ -139,6 +154,11 @@ function CreateAutoUpgradeToggle(tab, group, upgrade, toggleId)
                 if Running[toggleId] then return end
 
                 Running[toggleId] = true
+
+                if delayOffset then
+                    task.wait(delayOffset)
+                end
+
                 while env[toggleId] == true do
                     for _, option in ipairs(upgrade()) do
                         if not env[toggleId] then
@@ -167,10 +187,10 @@ function CreateAutoUpgradeToggle(tab, group, upgrade, toggleId)
 end
 
 function RebirthFunc()
-    task.spawn(function()
-        if Running.Rebirth then return end
+    if Running.Rebirth then return end
 
-        Running.Rebirth = true
+    Running.Rebirth = true
+    task.spawn(function()
         local Event = Remotes:FindFirstChild("Rebirth")
         if debug and not Event then print("[Debug] Remote not Found") end
         while env.AutoRebirth == true do
@@ -178,6 +198,35 @@ function RebirthFunc()
             task.wait(0.2)
         end
         Running.Rebirth = false
+    end)
+end
+
+function CollectCoinsFunc()
+    if Running.Coins then return end
+
+    Running.Coins = true
+    task.spawn(function()
+        local CoinsFolder = ws:FindFirstChild("MapEssentials").Spawned
+        local Event = Remotes:FindFirstChild("CollectPart")
+        if not CoinsFolder then
+            if debug then print("[Debug] Coins Folder not found... Disabling") end
+            Running.Coins = false
+            return
+        end
+        if not Event then
+            if debug then print("[Debug] Event not found... Disabling") end
+            Running.Coins = false
+            return
+        end
+        while env.AutoCollectCoins == true do
+            for _, coin in ipairs(CoinsFolder:GetChildren()) do
+                if coin then
+                    Event:FireServer(tostring(coin))
+                end
+            end
+            task.wait(0.2)
+        end
+        Running.Coins = false;
     end)
 end
 
@@ -218,6 +267,13 @@ local RebirthTab = Window:CreateTab({
     EmptyText = "Nothing here yet",
 })
 
+local CoinsTab = Window:CreateTab({
+    Name = "Coins",
+    Desc = "Coins Upgrades",
+    Icon = "coins",
+    EmptyText = "Nothing here yet",
+})
+
 local Toggle = WorldTab:CreateToggle({
     Name = "Auto Drop",
     Desc = "Triggers Dropper",
@@ -247,7 +303,7 @@ local Dropdown = WorldTab:CreateDropdown({
 
 local CashMaxToggle = WorldTab:CreateToggle({
     Name = "Max Upgrade",
-    Desc = "Buy Maximum Amount",
+    Desc = "Buy Maximum Amount | Syncs to Rebirth's aswell",
     CurrentValue = false,
     Callback = function(state)
         env.MaxUpgrade = state
@@ -255,7 +311,11 @@ local CashMaxToggle = WorldTab:CreateToggle({
     end
 })
 
-local CashToggle = CreateAutoUpgradeToggle(WorldTab, "Cash", function() return CashSelectedUpgrades end, "AutoUpgrade1")
+CashToggle = CreateAutoUpgradeToggle(WorldTab, "Cash", function() return CashSelectedUpgrades end, "AutoUpgrade1", 0, function()
+    if RebirthToggle then RebirthToggle:Set(false) end
+    if CoinsToggle then CoinsToggle:Set(false) end
+    if debug then print("[Debug] Disabled Other Upgrades, Enabled Rebirth Toggle") end
+end)
 
 local Toggle = RebirthTab:CreateToggle({
     Name = "Auto Rebirth",
@@ -284,23 +344,41 @@ local Dropdown = RebirthTab:CreateDropdown({
     end,
 })
 
-local RebirthMaxToggle = RebirthTab:CreateToggle({
-    Name = "Max Upgrade",
-    Desc = "Buy Maximum Amount",
+RebirthToggle = CreateAutoUpgradeToggle(RebirthTab, "RebirthPoints", function() return RebirthSelectedUpgrades end, "AutoUpgrade2", 0.15, function()
+    if CashToggle then CashToggle:Set(false) end
+    if CoinsToggle then CoinsToggle:Set(false) end
+    if debug then print("[Debug] Disabled Other Upgrades, Enabled Rebirth Toggle") end
+end)
+
+local Toggle = CoinsTab:CreateToggle({
+    Name = "Auto Collect Coins",
+    Desc = "Collects Coins",
     CurrentValue = false,
     Callback = function(state)
-        env.MaxUpgrade = state
-        if debug then print("[Debug] Max Upgrade State: ", state) end
-        if state ~= CashMaxToggle:Get() then
-            if debug then print("[Debug] Changed State of Cash Max Toggle to: ", state) end
-            CashMaxToggle:Set(state)
+        if debug then print("[Debug] Auto Collect Loop: ", state) end
+        env.AutoCollectCoins = state
+        if state then
+            CollectCoinsFunc()
         end
-    end
+    end,
 })
 
-if CashMaxToggle:Get() ~= RebirthMaxToggle:Get() then
-    RebirthMaxToggle:Set(CashMaxToggle:Get())
-    if debug then print("[Debug] Changed State of Rebirth Max Toggle to: ", CashMaxToggle:Get()) end
-end
+local Dropdown = CoinsTab:CreateDropdown({
+    Name = "Upgrades",
+    Desc = "Coins Upgrades",
+    Options = { "More Cash", "More XP", "Faster Spawn"},
+    CurrentOption = nil,
+    MultipleOptions = true,
+    Placeholder = "None",
+    SearchAfter = 6,
+    Callback = function(Options)
+        CoinsSelectedUpgrades = Options
+        if debug then print("[Debug] Selected Coin Upgrades: ", table.concat(CoinsSelectedUpgrades, ", ")) end
+    end,
+})
 
-local RebirthToggle = CreateAutoUpgradeToggle(RebirthTab, "RebirthPoints", function() return RebirthSelectedUpgrades end, "AutoUpgrade2")
+CoinsToggle = CreateAutoUpgradeToggle(CoinsTab, "Coins", function() return CoinsSelectedUpgrades end, "AutoUpgradeCoins", 0.15, function()
+    if CashToggle then CashToggle:Set(false) end
+    if RebirthToggle then RebirthToggle:Set(false) end
+    if debug then print("[Debug] Disabled Other Upgrades, Enabled Coins Toggle") end
+end)
