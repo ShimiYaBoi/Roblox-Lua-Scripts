@@ -7,6 +7,8 @@ local debug = true
 local RS = game:GetService("ReplicatedStorage")
 local env = getgenv()
 local OverWorldIslands = {}
+local MGParasideIslands = {}
+local SevenSeasIslands = {}
 local Airflow = loadstring(game:HttpGet("https://raw.githubusercontent.com/PookiePepelsss/Airflow-UI/refs/heads/main/Source.luau"))()
 
 env.AutoBlow = false;
@@ -45,6 +47,10 @@ local function GetWorld(World, Table)
     if debug then print("[Debug] Printing Table: ", Table, "\n", table.concat(table, " | ")) end
 end
 
+GetWorld("The Overworld", OverWorldIslands)
+GetWorld("Minigame Paradise", MGParasideIslands)
+--GetWorld("Seven Seas", SevenSeasIslands)
+
 local function GetCharacter()
     return plr.Character or plr.CharacterAdded:Wait()
 end
@@ -78,7 +84,7 @@ function BlowFunc()
         Event:FireServer("BlowBubble")
         task.wait(0.1)
     end
-    Running.Sell = false
+    Running.Blow = false
 end
 
 function SellFunc()
@@ -88,6 +94,7 @@ function SellFunc()
     local Event = RS:FindFirstChild("Shared").Framework.Network.Remote.RemoteEvent
     while env.AutoSell == true do
         Event:FireServer("SellBubble")
+        task.wait(0.1)
     end
     Running.Sell = false
 end
@@ -165,6 +172,7 @@ function RedeemCodes()
         local Event = RS.Shared.Framework.Network.Remote.RemoteFunction
         Event:InvokeServer("RedeemCode", code)
         if debug then print("[Debug] Redeemed: ", code) end
+        task.wait(0.7)
     end
 end
 
@@ -236,6 +244,7 @@ local Window = Airflow:CreateWindow({
                 Name = "Changelog",
                 Icon = "scroll-text",
                 Entries = {
+                    {Title = "v1.1", Date = "Oct 16, 2026", Content = "Bug fixes of some functions"},
                     {Title = "v1.0", Date = "Oct 16, 2026", Content = "Created the Script"}
                 }
             }
@@ -258,10 +267,14 @@ local Toggle = MainTab:CreateToggle({
     CurrentValue = false,
     Flag = "AutoBlow",
     Callback = function(value)
-        if debug then print("[Debug] Auto Blow State: ", value) end
+        env.AutoBlow = value
+
+        if debug then
+            print("[Debug] Auto Blow State:", value)
+        end
+
         if value then
-            env.AutoBlow = value;
-            BlowFunc()
+            task.spawn(BlowFunc)
         end
     end,
 })
@@ -270,13 +283,42 @@ local Toggle = MainTab:CreateToggle({
     Name = "Auto Sell Bubbles",
     Desc = "Auto Sells",
     CurrentValue = false,
-    Flag = "AutoBlow",
+    Flag = "AutoSell",
     Callback = function(value)
-        if debug then print("[Debug] Auto Blow State: ", value) end
-        if value then
-            env.AutoSell = value;
-            SellFunc()
+        env.AutoSell = value
+
+        if debug then
+            print("[Debug] Auto Sell State:", value)
         end
+
+        if value then
+            task.spawn(SellFunc)
+        end
+    end,
+})
+
+local Toggle = MainTab:CreateToggle({
+    Name = "Auto Collect Pickups",
+    Desc = "Auto Collect Coins, Gems, Etc",
+    CurrentValue = false,
+    Flag = "AutoCollect",
+    Callback = function(value)
+        env.AutoCollectPicksUps = value;
+        if debug then print("[Debug] Auto Collect State: ", value) end
+        if value then
+            task.spawn(AutoCollectPickUpsFunc)
+        end
+    end,
+})
+
+local Button = MainTab:CreateButton({
+    Name = "Collect Pickups nearby",
+    Desc = "Collect Once",
+    Icon = "gift",
+    Style = "Primary",
+    Callback = function()
+        if debug then print("[Debug] Collecting Pickups") end
+        CollectPickUpsFunc()
     end,
 })
 
@@ -299,5 +341,19 @@ local Button = MainTab:CreateButton({
     Callback = function()
         if debug then print("[Debug] Unlocked All Worlds") end
         UnlockAllWorlds("The Overworld")
+    end,
+})
+
+local Dropdown = MainTab:CreateDropdown({
+    Name = "Teleport To Island",
+    Desc = "",
+    Options = OverWorldIslands,
+    CurrentOption = "Classic",
+    MultipleOptions = false,
+    Placeholder = "None",
+    SearchAfter = 6,
+    Flag = "CameraMode",
+    Callback = function(option)
+        TPToIsland("The Overworld", option)
     end,
 })
