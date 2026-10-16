@@ -112,17 +112,20 @@ function CollectPickUpsFunc()
 end
 
 function AutoCollectPickUpsFunc()
-    if Running.Collect then return end
-
+ if Running.Collect then return end
     Running.Collect = true
 
-
     local Event = RS.Remotes.Pickups.CollectPickup
+    local folder = ws.Rendered:GetChildren()[15]
+
+    if not folder then
+        Running.Collect = false
+        return
+    end
 
     local function Collect(v)
-        if not env.AutoCollectPicksUps or not v:IsA("Instance") then
-            return
-        end
+        if not env.AutoCollectPicksUps then return end
+        if not v:IsA("Model") then return end
 
         local char = GetCharacter()
         if not char then return end
@@ -133,24 +136,26 @@ function AutoCollectPickUpsFunc()
         task.wait(0.1)
 
         Event:FireServer(tostring(v.Name))
-        if debug then print("[Debug] Collected: ", v.Name) end
+
+        if debug then print("[Debug] Collected:", v.Name) end
+
         v:Destroy()
-        if debug then print("[Debug] Destroyed: ", v.Name) end
 
-        local folder = ws.Rendered:GetChildren()[15]
-        if not folder then return end
+        if debug then print("[Debug] Destroyed:", v.Name) end
 
-        for _, v in ipairs(folder:GetChildren()) do
-            if not env.AutoCollectPicksUps then break end
-            Collect(v)
-        end
-
-        folder.ChildAdded:Connect(function(v)
-            if env.AutoCollectPicksUps then
-                task.spawn(Collect, v)
-            end
-        end)
+        char:PivotTo(Pos)
     end
+
+    for _, v in ipairs(folder:GetChildren()) do
+        if not env.AutoCollectPicksUps then break end
+        Collect(v)
+    end
+
+    folder.ChildAdded:Connect(function(v)
+        if env.AutoCollectPicksUps then
+            task.spawn(Collect, v)
+        end
+    end)
 end
 
 function RedeemCodes()
