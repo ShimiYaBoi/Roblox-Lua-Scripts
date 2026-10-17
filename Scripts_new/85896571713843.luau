@@ -3,7 +3,7 @@ local ws = workspace
 local Players = game:GetService("Players")
 local plr = Players.LocalPlayer
 local char, hum, hrp
-local debug = true
+local debug = false
 local RS = game:GetService("ReplicatedStorage")
 local env = getgenv()
 local OverWorldIslands = {"The Overworld"}
