@@ -1,19 +1,31 @@
 local ws = workspace
-local EncodingService = game:GetService("EncodingService")
+--local EncodingService = game:GetService("EncodingService")
 local Players = game:GetService("Players")
 local plr = Players.LocalPlayer
 local char, hum, hrp
 local debug = true
 local RS = game:GetService("ReplicatedStorage")
 local env = getgenv()
-local OverWorldIslands = {}
-local MGParasideIslands = {}
-local SevenSeasIslands = {}
+local OverWorldIslands = {"The Overworld"}
+--local MGParasideIslands = {}
+--local SevenSeasIslands = {}
 local Airflow = loadstring(game:HttpGet("https://raw.githubusercontent.com/PookiePepelsss/Airflow-UI/refs/heads/main/Source.luau"))()
+local Shared = RS:FindFirstChild("Shared")
+local SData = Shared.Data
+local Framework = Shared.Framework
+local Utils = Shared.Utils
+local RemoteHandle = Framework.Network.Remote.RemoteEvent
+local FunctionHandle = Framework.Network.Remote.RemoteFunction
+local Client = RS.Client
+local StatsUtil = require(Utils.Stats.StatsUtil)
+local localData = require(Client.Framework.Services.LocalData)
+local Data = localData:Get()
 
 env.AutoBlow = false;
 env.AutoSell = false;
 env.AutoCollectPicksUps = false;
+env.SellPercent = 50;
+env.TelePlace = nil;
 
 local Running = {
     Blow = false;
@@ -41,14 +53,13 @@ local function GetWorld(World, Table)
     for _, v in ipairs(island.Islands:GetChildren()) do
         if v:IsA("Folder") and v then
             table.insert(Table, v)
-            if debug then print("[Debug] Added: ", v, " To Table: ", Table) end
+            if debug then print("[Debug] Added: ", v, " To ", Table) end
         end
     end
-    if debug then print("[Debug] Printing Table: ", Table, "\n", table.concat(table, " | ")) end
 end
 
-GetWorld("The Overworld", OverWorldIslands)
-GetWorld("Minigame Paradise", MGParasideIslands)
+--GetWorld("The Overworld", OverWorldIslands)
+--GetWorld("Minigame Paradise", MGParasideIslands)
 --GetWorld("Seven Seas", SevenSeasIslands)
 
 local function GetCharacter()
@@ -79,7 +90,7 @@ function BlowFunc()
 
     Running.Blow = true;
 
-    local Event = RS:FindFirstChild("Shared").Framework.Network.Remote.RemoteEvent
+    local Event = RemoteHandle
     while env.AutoBlow == true do
         Event:FireServer("BlowBubble")
         task.wait(0.1)
@@ -91,13 +102,29 @@ function SellFunc()
     if Running.Sell then return end
 
     Running.Sell = true
-    local Event = RS:FindFirstChild("Shared").Framework.Network.Remote.RemoteEvent
+
+    local Event = RemoteHandle
+    while env.AutoSell == true do
+        task.wait(0.1)
+        if (env.SellPercent/100)*StatsUtil:GetBubbleStorage(Data) <= Data.Bubble.Amount then
+            Event:FireServer("SellBubble")
+            if debug then print("[Debug] Sold Bubbles with Amount of: ", Data.Bubble.Amount) end
+        end
+    end
+    Running.Sell = false;
+end
+
+--[[function SellFunc() <------ Old Function
+    if Running.Sell then return end
+
+    Running.Sell = true
+    local Event = RemoteHandle
     while env.AutoSell == true do
         Event:FireServer("SellBubble")
         task.wait(0.1)
     end
     Running.Sell = false
-end
+end]]
 
 function CollectPickUpsFunc()
     local event = RS.Remotes.Pickups.CollectPickup
@@ -169,23 +196,26 @@ function RedeemCodes()
     local mod = require(RS.Shared.Data.Codes)
 
     for code, _ in pairs(mod) do
-        local Event = RS.Shared.Framework.Network.Remote.RemoteFunction
+        local Event = FunctionHandle
         Event:InvokeServer("RedeemCode", code)
         if debug then print("[Debug] Redeemed: ", code) end
         task.wait(0.7)
     end
 end
 
-GetWorld("The Overworld", OverWorldIslands)
-
 function TPToIsland(world, island)
     if world then
         if debug then print("[Debug] World: ", world, "Is Found") end
+        --world = world:GetFullName()
+        --if debug then print("[Debug] Got World's Full name: ", world) end
             if island then 
                 if debug then print("[Debug] Island: ", island, "Is Found") end
-                local Event = RS:FindFirstChild("Shared").Framework.Network.Remote.RemoteEvent
-
-                Event:FireServer("Teleport", "Workspace.Worlds." .. tostring(world) .. ".Islands." .. tostring(island) .. ".Island" .. ".Portal.Spawn")
+                local Event = RemoteHandle
+                if island == "The Overworld" then
+                    Event:FireServer("Teleport", "Workspace.Worlds.The Overworld.PortalSpawn")
+                else
+                    Event:FireServer("Teleport", "Workspace.Worlds." .. tostring(world) .. ".Islands." .. tostring(island) .. ".Island" .. ".Portal.Spawn")
+                end
             else
                 if debug then print("[Debug] Island: ", island, "Is not Found") end
             end
@@ -244,7 +274,7 @@ local Window = Airflow:CreateWindow({
                 Name = "Changelog",
                 Icon = "scroll-text",
                 Entries = {
-                    {Title = "v1.1", Date = "Oct 16, 2026", Content = "Bug fixes of some functions"},
+                    {Title = "v1.1", Date = "Oct 17, 2026", Content = "Rewrote some function and recreated the tabs"},
                     {Title = "v1.0", Date = "Oct 16, 2026", Content = "Created the Script"}
                 }
             }
@@ -254,7 +284,181 @@ local Window = Airflow:CreateWindow({
     Parent = game:GetService("CoreGui"),
 })
 
-local MainTab = Window:CreateTab({
+local BubbleTab = Window:CreateTab({
+    Name = "Bubbles";
+    Desc = "Bubbles Automation";
+    Icon = "shell";
+    EmptyText = "Nothing here yet";
+})
+
+SellPercentageSlider = BubbleTab:CreateSlider({
+    Name = "Sell %",
+    Desc = "Sell when reached % of storage",
+    Range = { 1, 100 },
+    Increment = 1,
+    Suffix = "",
+    CurrentValue = 50,
+    Flag = "SellPercent",
+    Callback = function(state)
+        if debug then print("[Debug] Sell Percentage set to: ", state) end
+        env.SellPercent = state
+    end,
+})
+
+BubbleBlowToggle = BubbleTab:CreateToggle({
+    Name = "Auto Blow Bubbles",
+    Desc = "",
+    CurrentValue = false,
+    Flag = "AutoBlow",
+    Callback = function(value)
+        env.AutoBlow = value
+
+        if debug then
+            print("[Debug] Auto Blow State:", value)
+        end
+
+        if value then
+            task.spawn(BlowFunc)
+        end
+    end,
+})
+
+SellBubbleToggle = BubbleTab:CreateToggle({
+    Name = "Auto Sell Bubbles";
+    Desc = "";
+    CurrentValue = false;
+    Flag = "AutoSell";
+    Callback = function(state)
+        env.AutoSell = state
+        if debug then print("[Debug] Auto Sell State: ", state) end
+        if state then task.spawn(SellFunc) end
+    end;
+})
+
+local AutoTab = Window:CreateTab({
+    Name = "Automation";
+    Desc = "Automation Stuff";
+    Icon = "cog";
+    EmptyText = "Nothing here yet";
+})
+
+UnlockIslandsButton = AutoTab:CreateButton({
+    Name = "Unlock All Islands";
+    Desc = "Unlocks all islands in the Overworld";
+    Icon = "lock-keyhole-open";
+    Style = "";
+    Callback = function()
+        UnlockAllWorlds("The Overworld")
+    end
+})
+
+AutoCollectPickups = AutoTab:CreateToggle({
+    Name = "Auto Collect Pickups";
+    Desc = "";
+    CurrentValue = false;
+    Flag = "CollectPickUps";
+    Callback = function(state)
+        env.AutoCollectPickups = state
+        if debug then print("[Debug] Auto Pick up State: ", state) end
+        if state then task.spawn(AutoCollectPickUpsFunc) end
+    end;
+})
+
+CodesButton = AutoTab:CreateButton({
+    Name = "Redeem Codes",
+    Desc = "",
+    Icon = "gift",
+    Style = "",
+    Callback = function()
+        if debug then print("[Debug] Redeemed Codes") end
+        RedeemCodes()
+    end,
+})
+
+CollectButton = AutoTab:CreateButton({
+    Name = "Collect Pickups nearby",
+    Desc = "Collect Once",
+    Icon = "gift",
+    Style = "",
+    Callback = function()
+        if debug then print("[Debug] Collecting Pickups") end
+        CollectPickUpsFunc()
+    end,
+})
+
+local TeleportTab = Window:CreateTab({
+    Name = "Teleportation";
+    Desc = "Teleport stuff";
+    Icon = "move";
+    EmptyText = "Nothing here yet";
+})
+
+GetWorld("The Overworld", OverWorldIslands)
+TeleportDropdown = TeleportTab:CreateDropdown({
+    Name = "Teleport To";
+    Desc = "Selection of Islands to teleport to";
+    Options = OverWorldIslands;
+    MultipleOptions = false;
+    SearchAfter = 7;
+    Flag = "TeleportPlace";
+    Callback = function(opt)
+        if debug then print("[Debug] Selected Teleport option: ", opt) end
+        if opt then
+            env.TelePlace = opt
+        end
+    end
+})
+
+TeleportButton = TeleportTab:CreateButton({
+    Name = "Teleport";
+    Desc = "Teleport to selected location";
+    Icon = "mouse-pointer-click";
+    Callback = function()
+        if debug then print("[Debug] Pressed Teleport \n [Debug] Tried to Teleport to: ", env.TelePlace) end
+        TPToIsland("The Overworld", env.TelePlace)
+    end
+})
+
+local SettingsTab = Window:CreateTab({
+    Name = "Settings";
+    Desc = "Themes, Keybinds, UI";
+    Icon = "settings";
+    EmptyText = "Nothing here yet";
+})
+
+SettingsTab:CreateButton({
+    Name = "Unload Script";
+    Icon = "power";
+    Style = "Danger";
+    Callback = function()
+        Airflow:Confirm({
+            Title = "Unload?";
+            ConfirmText = "Unload";
+            Callback = function()
+                Window:Destroy()
+            end;
+        })
+    end;
+})
+
+SettingsTab:CreateKeybind({
+    Name = "Toggle UI",
+    CurrentKeybind = "F",
+    OnChanged = function(Key)
+        Window:SetKeybind(Key)
+    end,
+})
+
+task.wait(1.7)
+Notification = Airflow:Notify({
+    Title = "Loaded",
+    Content = "Airflow UI by Pookie",
+    Icon = "check",
+    Type = "Success",
+    Duration = 4,
+})
+
+--[[local MainTab = Window:CreateTab({
     Name = "Main",
     Desc = "Bubbles, World & Etc",
     Icon = "globe",
@@ -334,26 +538,12 @@ local Button = MainTab:CreateButton({
 })
 
 local Button = MainTab:CreateButton({
-    Name = "Unlock All Worlds",
+    Name = "Unlock All Islands",
     Desc = "",
     Icon = "lock-keyhole-open",
     Style = "Primary",
     Callback = function()
-        if debug then print("[Debug] Unlocked All Worlds") end
+        if debug then print("[Debug] Unlocked Islands in Overworld") end
         UnlockAllWorlds("The Overworld")
     end,
-})
-
-local Dropdown = MainTab:CreateDropdown({
-    Name = "Teleport To Island",
-    Desc = "",
-    Options = OverWorldIslands,
-    CurrentOption = "Classic",
-    MultipleOptions = false,
-    Placeholder = "None",
-    SearchAfter = 6,
-    Flag = "CameraMode",
-    Callback = function(option)
-        TPToIsland("The Overworld", option)
-    end,
-})
+})]]
