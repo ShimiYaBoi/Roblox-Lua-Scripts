@@ -3,7 +3,7 @@ local ws = workspace
 local Players = game:GetService("Players")
 local plr = Players.LocalPlayer
 local char, hum, hrp
-local debug = false
+local debug = true
 local RS = game:GetService("ReplicatedStorage")
 local env = getgenv()
 local OverWorldIslands = {"The Overworld"}
@@ -26,11 +26,13 @@ env.AutoSell = false;
 env.AutoCollectPicksUps = false;
 env.SellPercent = 50;
 env.TelePlace = nil;
+env.TOT = false;
 
 local Running = {
     Blow = false;
     Sell = false;
     Collect = false;
+    TrickOrTreat = false;
 }
 
 local function UpdateCharacter(character)
@@ -130,14 +132,14 @@ function CollectPickUpsFunc()
 end
 
 function AutoCollectPickUpsFunc()
- if Running.Collect then return end
-    Running.Collect = true
+ --if Running.Collect then return end
+    --Running.Collect = true
 
     local Event = RS.Remotes.Pickups.CollectPickup
     local folder = ws.Rendered:GetChildren()[15]
 
     if not folder then
-        Running.Collect = false
+        --Running.Collect = false
         return
     end
 
@@ -151,7 +153,7 @@ function AutoCollectPickUpsFunc()
         local Pos = char:GetPivot()
 
         char:PivotTo(v:GetPivot())
-        task.wait(0.1)
+        task.wait(0.2)
 
         Event:FireServer(tostring(v.Name))
 
@@ -167,11 +169,13 @@ function AutoCollectPickUpsFunc()
     for _, v in ipairs(folder:GetChildren()) do
         if not env.AutoCollectPicksUps then break end
         Collect(v)
+        task.wait(0.2)
     end
 
     folder.ChildAdded:Connect(function(v)
         if env.AutoCollectPicksUps then
             task.spawn(Collect, v)
+            task.wait(0.2)
         end
     end)
 end
@@ -223,12 +227,47 @@ function UnlockAllWorlds(world)
     unFreeze()
 end
 
+function TrickOrTreatFunc()
+    local houseFolder = ws:FindFirstChild("HalloweenEvent").Houses
+    if Running.TrickOrTreat then return end
+    Running.TrickOrTreat = true
+    while env.TOT == true do
+        task.wait(2)
+        if not houseFolder then
+            env.TOT = false;
+            Running.TrickOrTreat = false;
+            break
+        end
+        for _, house in ipairs(houseFolder:GetChildren()) do
+            if house then
+                if debug then print("[Debug] House Found") end
+                local Active = house:FindFirstChild("Activation"):FindFirstChild("Active")
+                local Ring = Active.Parent.Root
+                local root = GetHRP()
+                if Active then
+                    if debug then print("[Debug] Found Active State: ", Active.Value) end
+                    if Active.Value == true then
+                        root.Position = Ring.Position
+                        task.wait(0.1)
+                        RemoteHandle:FireServer("TrickOrTreat", house)
+                        task.wait(0.5)
+                        if debug then print("[Debug] Collect House", house) end
+                    end
+                else
+                    if debug then print("[Debug] Active is not found,", Active) end
+                end
+            end
+        end
+    end
+    Running.TrickOrTreat = false;
+end
+
 local Window = Airflow:CreateWindow({
     Name = "Bubble Gum Sim ",
     LoadingSubtitle = "by shimixd",
-    Icon = "lens",
+    Icon = "bubbles",
     Theme = "Default",
-    ToggleUIKeybind = "F",
+    ToggleUIKeybind = "R",
     Size = UDim2.fromOffset(640, 480),
     MinSize = Vector2.new(480, 360),
     MaxSize = Vector2.new(1000, 700),
@@ -256,6 +295,7 @@ local Window = Airflow:CreateWindow({
                 Name = "Changelog",
                 Icon = "scroll-text",
                 Entries = {
+                    {Title = "v1.2", Date = "Oct 17, 2026", Content = "Added Halloween 2026 Event"},
                     {Title = "v1.1", Date = "Oct 17, 2026", Content = "Rewrote some function and recreated the tabs"},
                     {Title = "v1.0", Date = "Oct 16, 2026", Content = "Created the Script"}
                 }
@@ -340,7 +380,7 @@ AutoCollectPickups = AutoTab:CreateToggle({
     CurrentValue = false;
     Flag = "CollectPickUps";
     Callback = function(state)
-        env.AutoCollectPickups = state
+        env.AutoCollectPicksUps = state
         if debug then print("[Debug] Auto Pick up State: ", state) end
         if state then task.spawn(AutoCollectPickUpsFunc) end
     end;
@@ -401,6 +441,34 @@ TeleportButton = TeleportTab:CreateButton({
     end
 })
 
+local EventTab = Window:CreateTab({
+    Name = "Halloween Event";
+    Desc = "Halloween 2026 Event tab";
+    Icon = "ghost";
+    EmptyText = "Nothing here yet";
+})
+
+EventTab:CreateButton({
+    Name = "Teleport To Event";
+    Icon = "mouse-pointer-click";
+    Style = "";
+    Callback = function()
+        RemoteHandle:FireServer("Teleport", "Workspace.HalloweenEvent.Spawn")
+    end
+})
+
+TrickOrTreatToggle = EventTab:CreateToggle({
+    Name = "Auto Trick or Treat";
+    Desc = "";
+    CurrentValue = false;
+    Flag = "TrickOrTreat";
+    Callback = function(state)
+        env.TOT = state
+        if debug then print("[Debug] Auto Trick Or Treat State: ", state) end
+        if state then task.spawn(TrickOrTreatFunc) end
+    end;
+})
+
 local SettingsTab = Window:CreateTab({
     Name = "Settings";
     Desc = "Themes, Keybinds, UI";
@@ -425,7 +493,7 @@ SettingsTab:CreateButton({
 
 SettingsTab:CreateKeybind({
     Name = "Toggle UI",
-    CurrentKeybind = "F",
+    CurrentKeybind = "R",
     OnChanged = function(Key)
         Window:SetKeybind(Key)
     end,
