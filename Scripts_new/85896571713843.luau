@@ -118,7 +118,7 @@ function CollectPickUpsFunc()
     local Pos = char:GetPivot()
     for _, v in ipairs(ws.Rendered:GetChildren()[15]:GetChildren()) do
         if v then
-            char:PivotTo(v:GetPivot())
+            --char:PivotTo(v:GetPivot())
             task.wait(0.1)
         event:FireServer(tostring(v.Name))
             --task.wait(0.2)
@@ -127,8 +127,8 @@ function CollectPickUpsFunc()
             if debug then print("[Debug] Destroyed: ", v.Name) end
         end
     end
-    char:PivotTo(Pos)
-    if debug then print("[Debug] Returned Player To Original Position") end
+    --char:PivotTo(Pos)
+    --if debug then print("[Debug] Returned Player To Original Position") end
 end
 
 function AutoCollectPickUpsFunc()
@@ -152,7 +152,7 @@ function AutoCollectPickUpsFunc()
 
         local Pos = char:GetPivot()
 
-        char:PivotTo(v:GetPivot())
+        --char:PivotTo(v:GetPivot())
         task.wait(0.2)
 
         Event:FireServer(tostring(v.Name))
@@ -163,7 +163,7 @@ function AutoCollectPickUpsFunc()
 
         if debug then print("[Debug] Destroyed:", v.Name) end
 
-        char:PivotTo(Pos)
+        --char:PivotTo(Pos)
     end
 
     for _, v in ipairs(folder:GetChildren()) do
