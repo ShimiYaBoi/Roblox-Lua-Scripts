@@ -350,6 +350,7 @@ local Window = Airflow:CreateWindow({
                 Name = "Changelog",
                 Icon = "scroll-text",
                 Entries = {
+                    {Title = "v1.1", Tag = "Latest", Changes = {"Themes", "Fixed Functions", "Added Equip Best", "Added Configs"}};
                     {Title = "v1.0", Date = "Oct 17, 2026", Content = "Created the Script | Has world 2 Support"}
                 }
             }
@@ -606,6 +607,10 @@ SettingsTab:CreateKeybind({
         Window:SetKeybind(Key)
     end,
 })
+
+SettingsTab:CreateThemePicker({ Flag = "Theme"})
+
+SettingsTab:CreateConfigManager({ Name = "Configs" })
 
 task.wait(1.7)
 Notification = Airflow:Notify({
