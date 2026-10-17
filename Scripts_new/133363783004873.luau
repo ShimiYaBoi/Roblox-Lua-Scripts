@@ -562,6 +562,21 @@ AutoMergePetsToggle = PetsTab:CreateToggle({
     end
 })
 
+AutoEquipBestToggle = PetsTab:CreateToggle({
+    Name = "Auto Equip best";
+    Desc = "Equips best pet";
+    CurrentValue = false;
+    Flag = "AutoEquip";
+    Callback = function(state)
+        env.AutoEquipBest = state
+        if debug then print("[Debug] Auto Equip Best: ", state) end
+
+        if state then
+            task.spawn(EquipBestPetFunc)
+        end
+    end
+})
+
 local SettingsTab = Window:CreateTab({
     Name = "Settings";
     Desc = "Themes, Keybinds, UI";

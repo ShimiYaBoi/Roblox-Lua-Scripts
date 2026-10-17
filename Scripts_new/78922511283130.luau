@@ -515,7 +515,7 @@ local PetsTab = Window:CreateTab({
 
 RebirthMaxButton = PetsTab:CreateButton({
     Name = "Pets To Roll";
-    Desc = "SHow many pets to roll";
+    Desc = "Show many pets to roll";
     Icon = "mouse-pointer-click";
     Style = "";
     Callback = function()
@@ -558,6 +558,21 @@ AutoMergePetsToggle = PetsTab:CreateToggle({
 
         if state then
             task.spawn(AutoMergeFunc)
+        end
+    end
+})
+
+AutoEquipBestToggle = PetsTab:CreateToggle({
+    Name = "Auto Equip best";
+    Desc = "Equips best pet";
+    CurrentValue = false;
+    Flag = "AutoEquip";
+    Callback = function(state)
+        env.AutoEquipBest = state
+        if debug then print("[Debug] Auto Equip Best: ", state) end
+
+        if state then
+            task.spawn(EquipBestPetFunc)
         end
     end
 })
