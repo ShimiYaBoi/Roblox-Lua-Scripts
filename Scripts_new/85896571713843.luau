@@ -3,12 +3,12 @@ local ws = workspace
 local Players = game:GetService("Players")
 local plr = Players.LocalPlayer
 local char, hum, hrp
-local debug = true
+local debug = false
 local RS = game:GetService("ReplicatedStorage")
 local env = getgenv()
 local OverWorldIslands = {"The Overworld"}
---local MGParasideIslands = {}
---local SevenSeasIslands = {}
+local MGParasideIslands = {}
+local SevenSeasIslands = {}
 local Airflow = loadstring(game:HttpGet("https://raw.githubusercontent.com/PookiePepelsss/Airflow-UI/refs/heads/main/Source.luau"))()
 local Shared = RS:FindFirstChild("Shared")
 local SData = Shared.Data
@@ -57,10 +57,6 @@ local function GetWorld(World, Table)
         end
     end
 end
-
---GetWorld("The Overworld", OverWorldIslands)
---GetWorld("Minigame Paradise", MGParasideIslands)
---GetWorld("Seven Seas", SevenSeasIslands)
 
 local function GetCharacter()
     return plr.Character or plr.CharacterAdded:Wait()
@@ -113,18 +109,6 @@ function SellFunc()
     end
     Running.Sell = false;
 end
-
---[[function SellFunc() <------ Old Function
-    if Running.Sell then return end
-
-    Running.Sell = true
-    local Event = RemoteHandle
-    while env.AutoSell == true do
-        Event:FireServer("SellBubble")
-        task.wait(0.1)
-    end
-    Running.Sell = false
-end]]
 
 function CollectPickUpsFunc()
     local event = RS.Remotes.Pickups.CollectPickup
@@ -206,8 +190,6 @@ end
 function TPToIsland(world, island)
     if world then
         if debug then print("[Debug] World: ", world, "Is Found") end
-        --world = world:GetFullName()
-        --if debug then print("[Debug] Got World's Full name: ", world) end
             if island then 
                 if debug then print("[Debug] Island: ", island, "Is Found") end
                 local Event = RemoteHandle
@@ -457,93 +439,3 @@ Notification = Airflow:Notify({
     Type = "Success",
     Duration = 4,
 })
-
---[[local MainTab = Window:CreateTab({
-    Name = "Main",
-    Desc = "Bubbles, World & Etc",
-    Icon = "globe",
-    EmptyText = "Nothing here yet",
-})
-
-local Toggle = MainTab:CreateToggle({
-    Name = "Auto Blow Bubbles",
-    Desc = "Auto Clicks",
-    CurrentValue = false,
-    Flag = "AutoBlow",
-    Callback = function(value)
-        env.AutoBlow = value
-
-        if debug then
-            print("[Debug] Auto Blow State:", value)
-        end
-
-        if value then
-            task.spawn(BlowFunc)
-        end
-    end,
-})
-
-local Toggle = MainTab:CreateToggle({
-    Name = "Auto Sell Bubbles",
-    Desc = "Auto Sells",
-    CurrentValue = false,
-    Flag = "AutoSell",
-    Callback = function(value)
-        env.AutoSell = value
-
-        if debug then
-            print("[Debug] Auto Sell State:", value)
-        end
-
-        if value then
-            task.spawn(SellFunc)
-        end
-    end,
-})
-
-local Toggle = MainTab:CreateToggle({
-    Name = "Auto Collect Pickups",
-    Desc = "Auto Collect Coins, Gems, Etc",
-    CurrentValue = false,
-    Flag = "AutoCollect",
-    Callback = function(value)
-        env.AutoCollectPicksUps = value;
-        if debug then print("[Debug] Auto Collect State: ", value) end
-        if value then
-            task.spawn(AutoCollectPickUpsFunc)
-        end
-    end,
-})
-
-local Button = MainTab:CreateButton({
-    Name = "Collect Pickups nearby",
-    Desc = "Collect Once",
-    Icon = "gift",
-    Style = "Primary",
-    Callback = function()
-        if debug then print("[Debug] Collecting Pickups") end
-        CollectPickUpsFunc()
-    end,
-})
-
-local Button = MainTab:CreateButton({
-    Name = "Redeem Codes",
-    Desc = "",
-    Icon = "gift",
-    Style = "Primary",
-    Callback = function()
-        if debug then print("[Debug] Redeemed Codes") end
-        RedeemCodes()
-    end,
-})
-
-local Button = MainTab:CreateButton({
-    Name = "Unlock All Islands",
-    Desc = "",
-    Icon = "lock-keyhole-open",
-    Style = "Primary",
-    Callback = function()
-        if debug then print("[Debug] Unlocked Islands in Overworld") end
-        UnlockAllWorlds("The Overworld")
-    end,
-})]]
