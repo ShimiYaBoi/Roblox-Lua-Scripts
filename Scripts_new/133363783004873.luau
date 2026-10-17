@@ -150,7 +150,7 @@ function AutoSellFunc()
         if not env.AutoSell then break end
 
         task.spawn(Selling, obj)
-        task.wait(0.1)
+        --task.wait(0.1)
     end
 
     Running.Sell = false

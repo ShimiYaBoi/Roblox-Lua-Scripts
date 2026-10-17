@@ -150,7 +150,7 @@ function AutoSellFunc()
         if not env.AutoSell then break end
 
         task.spawn(Selling, obj)
-        task.wait(0.1)
+        --task.wait(0.1)
     end
 
     Running.Sell = false
@@ -350,7 +350,7 @@ local Window = Airflow:CreateWindow({
                 Name = "Changelog",
                 Icon = "scroll-text",
                 Entries = {
-                    {Title = "v1.1", Tag = "Latest", Changes = {"Themes", "Fixed Functions", "Added Equip Best", "Added Configs"}};
+                    {Title = "v1.1", Tag = "Latest", Changes = {"Themes", "Fixed Functions", "Added Equip Best", "Added Configs", "Made Faster some Functions"}};
                     {Title = "v1.0", Date = "Oct 17, 2026", Content = "Created the Script | Has world 2 Support"}
                 }
             }
