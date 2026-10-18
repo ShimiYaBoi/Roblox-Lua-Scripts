@@ -412,32 +412,47 @@ function EquipBestTrailFunc()
     Running.EquipTrail = true
     local Event = Remotes.BuyEquipTrail
     local TrailEquippedStats = plr:FindFirstChild("TrailCurrent")
-    local CashStats = plr:FindFirstChild("leaderstats").Cash
+    local CashStats = plr:FindFirstChild("leaderstats")
+        and plr.leaderstats:FindFirstChild("Cash")
+
     task.spawn(function()
         while env.AutoEquipTrail do
+            if not TrailEquippedStats or not CashStats then
+                warn("[Debug] TrailCurrent or Cash stats not found")
+                task.wait(0.5)
+                continue
+            end
+
             local Cash = CashStats.Value
             local TrailEquipped = TrailEquippedStats.Value
-            local CurrentPrice = TrailsModule.Trails[TrailEquipped].Price
-            if debug then print("[Debug] Cash: ", Cash, "Current Trail: ", TrailEquipped) end
-            if CurrentPrice then
-                for _, trail in ipairs(SortedTrails) do
-                    if trail.Price > CurrentPrice then
-                        if Cash >= trail.Price then
-                            Event:FireServer(trail.Name)
-                            if debug then
-                                print("[Debug] Equipped Trail: ", trail.Name)
-                            end
-                        elseif debug then
-                            print("[Debug] Cannot afford next Trail: ", trail.Name)
-                        end
-                        break
-                    end
-                end
-            elseif debug then
-                warn("[Debug] Unknown current Trail: ", TrailEquipped)
+
+            -- Safely handle an empty or unknown equipped trail.
+            local CurrentTrail = TrailsModule.Trails[TrailEquipped]
+            local CurrentPrice = CurrentTrail and CurrentTrail.Price or 0
+
+            if debug then
+                print("[Debug] Cash:", Cash, "Current Trail:", TrailEquipped)
             end
+
+            for _, trail in ipairs(SortedTrails) do
+                if trail.Price > CurrentPrice then
+                    if Cash >= trail.Price then
+                        Event:FireServer(trail.Name)
+
+                        if debug then
+                            print("[Debug] Equipped Trail:", trail.Name)
+                        end
+                    elseif debug then
+                        print("[Debug] Cannot afford next Trail:", trail.Name)
+                    end
+
+                    break
+                end
+            end
+
             task.wait(0.5)
         end
+
         Running.EquipTrail = false
     end)
 end
