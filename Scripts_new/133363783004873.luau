@@ -28,6 +28,8 @@ local selectedUpgrades = {
     Cash = {};
     Gems = {};
 }
+local SortedPushers = {}
+local PusherModule = require(RS:FindFirstChild("Others").PusherShop)
 
 env.AutoSell = false;
 env.AutoRebirth = false;
@@ -40,6 +42,7 @@ env.AutoRoll = false;
 env.RollAmount = "One";
 env.AutoMerge = false;
 env.AutoEquipBest = false;
+env.AutoEquipPusher = false;
 
 local Running = {
     Sell = false;
@@ -50,6 +53,7 @@ local Running = {
     Roll = false;
     Merge = false;
     EquipBest = false;
+    EquipPusher = false;
 }
 
 --[[
@@ -85,6 +89,20 @@ end
 local function GetHRP()
     local character = GetCharacter()
     return character:WaitForChild("HumanoidRootPart")
+end
+
+for i,v in pairs(PusherModule.Pushers) do
+    table.insert(SortedPushers, {Name = i, Price = v})
+end
+
+table.sort(SortedPushers, function(a, b)
+    return a.Price < b.Price
+end)
+
+if debug then
+    for _, push in ipairs(SortedPushers) do
+        print("[Debug] ",push.Name, push.Price)
+    end
 end
 
 local SellConnection
@@ -161,13 +179,15 @@ function RebirthFunc()
 
     Running.Rebirth = true
     local Event = Remotes.BuyRebirth
-    while env.AutoRebirth == true do
-        task.wait(0.5)
-        local randomId = HttpService:GenerateGUID(false)
-        if debug then print("[Debug] GeneratedGUID: ", randomId) end
+    task.spawn(function()
+        while env.AutoRebirth == true do
+            task.wait(0.5)
+            local randomId = HttpService:GenerateGUID(false)
+            if debug then print("[Debug] GeneratedGUID: ", randomId) end
 
-        Event:FireServer(randomId, leaderstats.Rebirth.Value, leaderstats.Prestige.Value, env.MaxRebirth)
-    end
+            Event:FireServer(randomId, leaderstats.Rebirth.Value, leaderstats.Prestige.Value, env.MaxRebirth)
+        end
+    end)
     Running.Rebirth = false
 end
 
@@ -176,13 +196,15 @@ function PrestigeFunc()
 
     Running.Prestige = true
     local Event = Remotes.BuyPrestige
-    while env.AutoPrestige == true do
-        task.wait(0.5)
-        local randomId = HttpService:GenerateGUID(false)
-        if debug then print("[Debug] GeneratedGUID: ", randomId) end
+    task.spawn(function()
+        while env.AutoPrestige == true do
+            task.wait(0.5)
+            local randomId = HttpService:GenerateGUID(false)
+            if debug then print("[Debug] GeneratedGUID: ", randomId) end
 
-        Event:FireServer(randomId, leaderstats.Rebirth.Value, leaderstats.Prestige.Value, false)
-    end
+            Event:FireServer(randomId, leaderstats.Rebirth.Value, leaderstats.Prestige.Value, false)
+        end
+    end)
     Running.Prestige = false
 end
 
@@ -190,11 +212,13 @@ function ClaimIndexFunc()
     if Running.ClaimIndex then return end
 
     Running.ClaimIndex = true
-    while env.AutoClaimIndex == true do
-        local Event = Remotes.ClaimIndexReward
-        Event:FireServer("ALL")
-        task.wait(0.1)
-    end
+    task.spawn(function()
+        while env.AutoClaimIndex == true do
+            local Event = Remotes.ClaimIndexReward
+            Event:FireServer("ALL")
+            task.wait(0.1)
+        end
+    end)
     Running.ClaimIndex = false;
 end
 
@@ -212,48 +236,53 @@ for _, obj in ipairs(plr.PlayerGui.Main.UIFrames.UpgradeFrame.OtherScrollingFram
     end
 end
 
+if debug then print("[Debug] Current Player's Pusher: ", plr:FindFirstChild("PusherCurrent").Value) end
+if debug then print("[Debug] Current Player's Total Collected Items: ", plr:FindFirstChild("leaderstats").Collected.Value) end
+
 function UpgradeCashFunc()
     if Running.Upgrade then return end
 
     Running.Upgrade = true
     local Event = Remotes.BuyUpgrade
+    task.spawn(function()
+        while env.AutoUpgrade do
+            task.wait(0.1)
+            for _, upg in ipairs(selectedUpgrades.Cash) do
+                if not env.AutoUpgrade then
+                    if debug then print("[Debug] AutoUgprade is not found nor enabled") end
+                    break
+                end
 
-    while env.AutoUpgrade do
-        task.wait(0.1)
-        for _, upg in ipairs(selectedUpgrades.Cash) do
-            if not env.AutoUpgrade then
-                if debug then print("[Debug] AutoUgprade is not found nor enabled") end
-                break
+                Event:FireServer(upg, env.MaxUpgrade)
+                if debug then print("[Debug] Buying Cash Upgrade: ", upg) end
+
+                task.wait(0.2)
             end
 
-            Event:FireServer(upg, env.MaxUpgrade)
-            if debug then print("[Debug] Buying Cash Upgrade: ", upg) end
+            for _, upg in ipairs(selectedUpgrades.Gems) do
+                if not env.AutoUpgrade then
+                    if debug then print("[Debug] AutoUgprade is not found nor enabled") end
+                    break
+                end
 
-            task.wait(0.2)
-        end
+                Event:FireServer(upg, env.MaxUpgrade)
+                if debug then print("[Debug] Buying Gem Upgrade: ", upg) end
 
-        for _, upg in ipairs(selectedUpgrades.Gems) do
-            if not env.AutoUpgrade then
-                if debug then print("[Debug] AutoUgprade is not found nor enabled") end
-                break
+                task.wait(0.2)
             end
-
-            Event:FireServer(upg, env.MaxUpgrade)
-            if debug then print("[Debug] Buying Gem Upgrade: ", upg) end
-
-            task.wait(0.2)
         end
-    end
+    end)
     Running.Upgrade = false
 end
 
 function RollPetFunc()
     local Event = Remotes.RollPets
-    
-    while env.AutoRoll do
-        task.wait(0.5)
-        Event:InvokeServer(env.RollAmount)
-    end
+    task.spawn(function()
+        while env.AutoRoll do
+            task.wait(0.5)
+            Event:InvokeServer(env.RollAmount)
+        end
+    end)
 end
 
 function AutoMergeFunc()
@@ -263,35 +292,37 @@ function AutoMergeFunc()
 
     local folder = plr.PetOwned
     local remote = Remotes.MergePets
-    while env.AutoMerge do
-        local speciesValues = {}
-        local foundPair = false
+    task.spawn(function()
+        while env.AutoMerge do
+            local speciesValues = {}
+            local foundPair = false
 
-        for _, numberValue in ipairs(folder:GetChildren()) do
-            if not env.AutoMerge then
-                break
-            end
+            for _, numberValue in ipairs(folder:GetChildren()) do
+                if not env.AutoMerge then
+                    break
+                end
 
-            if numberValue:IsA("NumberValue") then
-                local species = numberValue:GetAttribute("Species")
+                if numberValue:IsA("NumberValue") then
+                    local species = numberValue:GetAttribute("Species")
 
-                if species ~= nil then
-                    speciesValues[species] = speciesValues[species] or {}
-                    table.insert(speciesValues[species], numberValue)
+                    if species ~= nil then
+                        speciesValues[species] = speciesValues[species] or {}
+                        table.insert(speciesValues[species], numberValue)
 
-                    if #speciesValues[species] >= 2 then
-                        local values = speciesValues[species]
+                        if #speciesValues[species] >= 2 then
+                            local values = speciesValues[species]
 
-                        remote:InvokeServer(values[1].Name, values[2].Name, false)
-                        if debug then print("[Debug] Merged: " .. tostring(values[1]:GetAttribute("Species"))) end
-                        foundPair = true
-                        break
+                            remote:InvokeServer(values[1].Name, values[2].Name, false)
+                            if debug then print("[Debug] Merged: " .. tostring(values[1]:GetAttribute("Species"))) end
+                            foundPair = true
+                            break
+                        end
                     end
                 end
             end
+            task.wait(foundPair and 0.1 or 0.5)
         end
-        task.wait(foundPair and 0.1 or 0.5)
-    end
+    end)
     Running.Merge = false
 end
 
@@ -300,10 +331,40 @@ function EquipBestPetFunc()
 
     Running.EquipBest = true
     local Event = Remotes.EquipPet
-    while env.AutoEquipBest do
-        task.wait(2)
-        Event:FireServer(nil,"Best")
-    end
+    task.spawn(function()
+        while env.AutoEquipBest do
+            task.wait(2)
+            Event:FireServer(nil,"Best")
+        end
+    end)
+end
+
+function EquipBestPusherFunc()
+    if Running.EquipPusher then return end
+
+    Running.EquipPusher = true
+    local Event = Remotes.EquipPusher
+    task.spawn(function()
+        while env.AutoEquipPusher do
+            local Collected = plr:FindFirstChild("leaderstats").Collected.Value
+            local PusherEquipped = plr:FindFirstChild("PusherCurrent").Value
+            if debug then print("[Debug] Total: ", Collected, " Current Pusher: ", PusherEquipped) end
+            for _, pusher in ipairs(SortedPushers) do
+                if pusher.Price > PusherModule.Pushers[PusherEquipped] then
+                    if Collected >= pusher.Price then
+                        Event:FireServer(pusher.Name)
+                        if debug then print("[Debug] Equipped Pusher: ", pusher.Name) end
+                        break
+                    else
+                        if debug then print("[Debug] Not Found / Cannot Afford: ", pusher.Name) end
+                        break
+                    end
+                end
+            end
+            task.wait(1.5)
+        end
+        Running.EquipPusher = false;
+    end)
 end
 
 --[[
@@ -350,7 +411,8 @@ local Window = Airflow:CreateWindow({
                 Name = "Changelog",
                 Icon = "scroll-text",
                 Entries = {
-                    {Title = "v1.1", Tag = "Latest", Changes = {"Themes", "Fixed Functions", "Added Equip Best", "Added Configs"}};
+                    {Title = "v1.2", Tag = "Latest", Changes = {"Added Auto Equip Best Pusher", "Improved Functions and stability"}};
+                    {Title = "v1.1", Date = "Oct 18, 2026", Changes = {"Themes", "Fixed Functions", "Added Equip Best", "Added Configs", "Made Faster some Functions"}};
                     {Title = "v1.0", Date = "Oct 17, 2026", Content = "Created the Script | Has world 2 Support"}
                 }
             }
@@ -440,6 +502,20 @@ AutoClaimIndexToggle = MainTab:CreateToggle({
         env.AutoClaimIndex = state
         if state then
             task.spawn(ClaimIndexFunc)
+        end
+    end
+})
+
+AutoPusherToggle = MainTab:CreateToggle({
+    Name = "Auto Pusher";
+    Desc = "Equips Best Pusher";
+    CurrentValue = false;
+    Flag = "PusherBest";
+    Callback = function(state)
+        if debug then print("[Debug] Auto Pusher state: ", state) end
+        env.AutoEquipPusher = state
+        if state then
+            task.spawn(EquipBestPusherFunc)
         end
     end
 })
