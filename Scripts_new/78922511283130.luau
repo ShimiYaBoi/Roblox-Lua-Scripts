@@ -30,6 +30,8 @@ local selectedUpgrades = {
 }
 local SortedPushers = {}
 local PusherModule = require(RS:FindFirstChild("Others").PusherShop)
+local SortedTrails = {}
+local TrailsModule = require(RS:FindFirstChild("Others").TrailShop)
 
 env.AutoSell = false;
 env.AutoRebirth = false;
@@ -43,6 +45,7 @@ env.RollAmount = "One";
 env.AutoMerge = false;
 env.AutoEquipBest = false;
 env.AutoEquipPusher = false;
+env.AutoEquipTrail = false;
 
 local Running = {
     Sell = false;
@@ -54,6 +57,7 @@ local Running = {
     Merge = false;
     EquipBest = false;
     EquipPusher = false;
+    EquipTrail = false;
 }
 
 --[[
@@ -101,7 +105,30 @@ end)
 
 if debug then
     for _, push in ipairs(SortedPushers) do
-        print("[Debug] ",push.Name, push.Price)
+        print("[Debug] Pusher: ",push.Name, push.Price)
+    end
+end
+
+for i, v in pairs(TrailsModule.Trails) do
+    if v.Price ~= nil then
+        table.insert(SortedTrails, {
+        Name = i;
+        Price = v.Price;
+        })
+    end
+end
+
+if SortedTrails then
+    table.sort(SortedTrails, function(a, b)
+        return a.Price < b.Price
+    end)
+else
+    if debug then print("[Debug] Table not found or nil") end
+end
+
+if debug then
+    for _, trail in ipairs(SortedTrails) do
+        print("[Debug] Trail: ", trail.Name, trail.Price)
     end
 end
 
@@ -239,6 +266,9 @@ end
 if debug then print("[Debug] Current Player's Pusher: ", plr:FindFirstChild("PusherCurrent").Value) end
 if debug then print("[Debug] Current Player's Total Collected Items: ", plr:FindFirstChild("leaderstats").Collected.Value) end
 
+if debug then print("[Debug] Current Player's Trail: ", plr:FindFirstChild("TrailCurrent").Value) end
+if debug then print("[Debug] Current Player's Cash: ", plr:FindFirstChild("leaderstats").Cash.Value) end
+
 function UpgradeCashFunc()
     if Running.Upgrade then return end
 
@@ -344,26 +374,71 @@ function EquipBestPusherFunc()
 
     Running.EquipPusher = true
     local Event = Remotes.EquipPusher
+    local CollectedStats = plr:FindFirstChild("leaderstats").Collected
+    local PusherEquippedStats = plr:FindFirstChild("PusherCurrent")
     task.spawn(function()
         while env.AutoEquipPusher do
-            local Collected = plr:FindFirstChild("leaderstats").Collected.Value
-            local PusherEquipped = plr:FindFirstChild("PusherCurrent").Value
+            local Collected = CollectedStats.Value
+            local PusherEquipped = PusherEquippedStats.Value
+            local CurrentPrice = PusherModule.Pushers[PusherEquipped]
             if debug then print("[Debug] Total: ", Collected, " Current Pusher: ", PusherEquipped) end
-            for _, pusher in ipairs(SortedPushers) do
-                if pusher.Price > PusherModule.Pushers[PusherEquipped] then
-                    if Collected >= pusher.Price then
-                        Event:FireServer(pusher.Name)
-                        if debug then print("[Debug] Equipped Pusher: ", pusher.Name) end
-                        break
-                    else
-                        if debug then print("[Debug] Not Found / Cannot Afford: ", pusher.Name) end
+            if CurrentPrice then
+                for _, pusher in ipairs(SortedPushers) do
+                    if pusher.Price > CurrentPrice then
+                        if Collected >= pusher.Price then
+                            Event:FireServer(pusher.Name)
+
+                            if debug then
+                                print("[Debug] Equipped Pusher:", pusher.Name)
+                            end
+                        elseif debug then
+                            print("[Debug] Cannot afford next pusher:", pusher.Name)
+                        end
                         break
                     end
                 end
+            elseif debug then
+                warn("[Debug] Unknown current pusher:", PusherEquipped)
             end
-            task.wait(1.5)
+            task.wait(0.5)
         end
-        Running.EquipPusher = false;
+        Running.EquipPusher = false
+    end)
+end
+
+function EquipBestTrailFunc()
+    if Running.EquipTrail then return end
+
+    Running.EquipTrail = true
+    local Event = Remotes.BuyEquipTrail
+    local TrailEquippedStats = plr:FindFirstChild("TrailCurrent")
+    local CashStats = plr:FindFirstChild("leaderstats").Cash
+    task.spawn(function()
+        while env.AutoEquipTrail do
+            local Cash = CashStats.Value
+            local TrailEquipped = TrailEquippedStats.Value
+            local CurrentPrice = TrailsModule.Trails[TrailEquipped].Price
+            if debug then print("[Debug] Cash: ", Cash, "Current Trail: ", TrailEquipped) end
+            if CurrentPrice then
+                for _, trail in ipairs(SortedTrails) do
+                    if trail.Price > CurrentPrice then
+                        if Cash >= trail.Price then
+                            Event:FireServer(trail.Name)
+                            if debug then
+                                print("[Debug] Equipped Trail: ", trail.Name)
+                            end
+                        elseif debug then
+                            print("[Debug] Cannot afford next Trail: ", trail.Name)
+                        end
+                        break
+                    end
+                end
+            elseif debug then
+                warn("[Debug] Unknown current Trail: ", TrailEquipped)
+            end
+            task.wait(0.5)
+        end
+        Running.EquipTrail = false
     end)
 end
 
@@ -411,7 +486,7 @@ local Window = Airflow:CreateWindow({
                 Name = "Changelog",
                 Icon = "scroll-text",
                 Entries = {
-                    {Title = "v1.2", Tag = "Latest", Changes = {"Added Auto Equip Best Pusher", "Improved Functions and stability"}};
+                    {Title = "v1.2", Tag = "Latest", Changes = {"Added Auto Equip Best Pusher", "Added Auto Buy Trails", "Improved Functions and stability"}};
                     {Title = "v1.1", Date = "Oct 18, 2026", Changes = {"Themes", "Fixed Functions", "Added Equip Best", "Added Configs", "Made Faster some Functions"}};
                     {Title = "v1.0", Date = "Oct 17, 2026", Content = "Created the Script | Has world 2 Support"}
                 }
@@ -516,6 +591,20 @@ AutoPusherToggle = MainTab:CreateToggle({
         env.AutoEquipPusher = state
         if state then
             task.spawn(EquipBestPusherFunc)
+        end
+    end
+})
+
+AutoTrailToggle = MainTab:CreateToggle({
+    Name = "Auto Trail";
+    Desc = "Buys Best Trail";
+    CurrentValue = false;
+    Flag = "TrailBest";
+    Callback = function(state)
+        if debug then print("[Debug] Auto Trail state: ", state) end
+        env.AutoEquipTrail = state
+        if state then
+            task.spawn(EquipBestTrailFunc)
         end
     end
 })
