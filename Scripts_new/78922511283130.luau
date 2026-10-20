@@ -49,6 +49,7 @@ env.AutoEquipBest = false;
 env.AutoEquipPusher = false;
 env.AutoEquipTrail = false;
 env.AutoEquipAura = false;
+env.AutoClaimObby = false;
 
 local Running = {
     Sell = false;
@@ -62,6 +63,7 @@ local Running = {
     EquipPusher = false;
     EquipTrail = false;
     EquipAura = false;
+    ClaimObby = false;
 }
 
 --[[
@@ -545,6 +547,21 @@ function EquipBestAuraFunc()
     end)
 end
 
+function AutoClaimObbyFunc()
+    if Running.ClaimObby then return end
+
+    Running.ClaimObby = true
+    local root = GetHRP()
+    local Finisher = ws:FindFirstChild("GemTouch")
+    while env.AutoClaimObby do
+        firetouchinterest(Finisher, root, 0)
+        task.wait(0.5)
+        firetouchinterest(Finisher, root, 1)
+        task.wait(1.5)
+    end
+    Running.ClaimObby = false;
+end
+
 --[[
  __        ________   _______   ______    ________   ______    __  __    
 /_/\      /_______/\/_______/\ /_____/\  /_______/\ /_____/\  /_/\/_/\   
@@ -589,7 +606,7 @@ local Window = Airflow:CreateWindow({
                 Name = "Changelog",
                 Icon = "scroll-text",
                 Entries = {
-                    {Title = "v1.3", Tag = "Latest", Changes = {"Added World 3 Support", "Fixed Auto Buy Trails", "Added Auto Buy Auras"}};
+                    {Title = "v1.3", Tag = "Latest", Changes = {"Added World 3 Support", "Fixed Auto Buy Trails", "Added Auto Buy Auras", "Added Auto Finish Obby"}};
                     {Title = "v1.2", Date = "Oct 18, 2026", Changes = {"Added Auto Equip Best Pusher", "Added Auto Buy Trails", "Improved Functions and stability"}};
                     {Title = "v1.1", Date = "Oct 18, 2026", Changes = {"Themes", "Fixed Functions", "Added Equip Best", "Added Configs", "Made Faster some Functions"}};
                     {Title = "v1.0", Date = "Oct 17, 2026", Content = "Created the Script | Has world 2 Support"}
@@ -681,6 +698,20 @@ AutoClaimIndexToggle = MainTab:CreateToggle({
         env.AutoClaimIndex = state
         if state then
             task.spawn(ClaimIndexFunc)
+        end
+    end
+})
+
+AutoFinishObbyToggle = MainTab:CreateToggle({
+    Name = "Auto Finish Obby";
+    Desc = "Automatically Finishes Obby";
+    CurrentValue = false;
+    Flag = "ClaimObby";
+    Callback = function(state)
+        if debug then print("[Debug] Auto Finish Obby state: ", state) end
+        env.AutoClaimObby = state
+        if state then
+            task.spawn(AutoClaimObbyFunc)
         end
     end
 })
