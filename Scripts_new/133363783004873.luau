@@ -32,6 +32,8 @@ local SortedPushers = {}
 local PusherModule = require(RS:FindFirstChild("Others").PusherShop)
 local SortedTrails = {}
 local TrailsModule = require(RS:FindFirstChild("Others").TrailShop)
+local SortedAuras = {}
+local AurasModule = require(RS:FindFirstChild("Others").AuraShop)
 
 env.AutoSell = false;
 env.AutoRebirth = false;
@@ -46,6 +48,7 @@ env.AutoMerge = false;
 env.AutoEquipBest = false;
 env.AutoEquipPusher = false;
 env.AutoEquipTrail = false;
+env.AutoEquipAura = false;
 
 local Running = {
     Sell = false;
@@ -58,6 +61,7 @@ local Running = {
     EquipBest = false;
     EquipPusher = false;
     EquipTrail = false;
+    EquipAura = false;
 }
 
 --[[
@@ -132,6 +136,27 @@ if debug then
     end
 end
 
+for i, v in pairs(AurasModule.Auras) do
+    if v.Price ~= nil then
+        table.insert(SortedAuras, {
+        Name = i;
+        Price = v.Price
+        })
+    end
+end
+
+if SortedAuras then
+    table.sort(SortedAuras, function(a, b)
+        return a.Price < b.Price
+    end)
+end
+
+if debug then
+    for _, aura in ipairs(SortedAuras) do
+        print("[Debug] Aura: ", aura.Name, aura.Price)
+    end
+end
+
 local SellConnection
 
 local function Selling(v)
@@ -195,7 +220,6 @@ function AutoSellFunc()
         if not env.AutoSell then break end
 
         task.spawn(Selling, obj)
-        --task.wait(0.1)
     end
 
     Running.Sell = false
@@ -423,10 +447,9 @@ function EquipBestTrailFunc()
                 continue
             end
 
-            local Cash = CashStats.Value
+            local Cash = tonumber(CashStats.Value)
             local TrailEquipped = TrailEquippedStats.Value
 
-            -- Safely handle an empty or unknown equipped trail.
             local CurrentTrail = TrailsModule.Trails[TrailEquipped]
             local CurrentPrice = CurrentTrail and CurrentTrail.Price or 0
 
@@ -454,6 +477,71 @@ function EquipBestTrailFunc()
         end
 
         Running.EquipTrail = false
+    end)
+end
+
+function EquipBestAuraFunc()
+    if Running.EquipAura then return end
+
+    Running.EquipAura = true
+    local Event = Remotes.BuyEquipAura
+    local AuraEquippedStats = plr:FindFirstChild("AuraCurrent")
+    local GemStats = plr:FindFirstChild("HiddenStats").Gem
+    local OwnedAuras = plr:FindFirstChild("HiddenStats").AuraOwned
+
+    task.spawn(function()
+        while env.AutoEquipAura do
+            if not AuraEquippedStats or not GemStats then
+                warn("[Debug] AuraCurrent or Gem stats not found")
+                task.wait(0.5)
+                continue
+            end
+
+            local Gems = tonumber(GemStats.Value)
+            local AuraEquipped = AuraEquippedStats.Value
+
+            local CurrentAura = AurasModule.Auras[AuraEquipped]
+            local CurrentPrice = CurrentAura and CurrentAura.Price or 0
+
+            local BestOwnedAura = nil
+
+            for _, aura in ipairs(SortedAuras) do
+                local OwnedValue = OwnedAuras:FindFirstChild(aura.Name)
+
+                if OwnedValue and OwnedValue:IsA("BoolValue") then
+                    BestOwnedAura = aura
+                end
+            end
+
+            if BestOwnedAura and BestOwnedAura.Name ~= AuraEquipped then
+                Event:FireServer(BestOwnedAura.Name)
+
+                if debug then
+                    print("[Debug] Equipping best owned aura:", BestOwnedAura.Name)
+                end
+
+            else
+                for _, aura in ipairs(SortedAuras) do
+                    if aura.Price > CurrentPrice then
+                        if Gems >= aura.Price then
+                            Event:FireServer(aura.Name)
+
+                            if debug then
+                                print("[Debug] Buying next aura:", aura.Name)
+                            end
+                        elseif debug then
+                            print("[Debug] Cannot afford next Aura:", aura.Name)
+                        end
+
+                        break
+                    end
+                end
+            end
+
+            task.wait(0.5)
+        end
+
+        Running.EquipAura = false
     end)
 end
 
@@ -489,7 +577,7 @@ local Window = Airflow:CreateWindow({
     },
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "MyHub",
+        FolderName = "CollectMillionItemsHub",
         FileName = "default",
     },
      Home = {
@@ -501,7 +589,8 @@ local Window = Airflow:CreateWindow({
                 Name = "Changelog",
                 Icon = "scroll-text",
                 Entries = {
-                    {Title = "v1.2", Tag = "Latest", Changes = {"Added Auto Equip Best Pusher", "Added Auto Buy Trails", "Improved Functions and stability"}};
+                    {Title = "v1.3", Tag = "Latest", Changes = {"Added World 3 Support", "Fixed Auto Buy Trails", "Added Auto Buy Auras"}};
+                    {Title = "v1.2", Date = "Oct 18, 2026", Changes = {"Added Auto Equip Best Pusher", "Added Auto Buy Trails", "Improved Functions and stability"}};
                     {Title = "v1.1", Date = "Oct 18, 2026", Changes = {"Themes", "Fixed Functions", "Added Equip Best", "Added Configs", "Made Faster some Functions"}};
                     {Title = "v1.0", Date = "Oct 17, 2026", Content = "Created the Script | Has world 2 Support"}
                 }
@@ -596,34 +685,6 @@ AutoClaimIndexToggle = MainTab:CreateToggle({
     end
 })
 
-AutoPusherToggle = MainTab:CreateToggle({
-    Name = "Auto Pusher";
-    Desc = "Equips Best Pusher";
-    CurrentValue = false;
-    Flag = "PusherBest";
-    Callback = function(state)
-        if debug then print("[Debug] Auto Pusher state: ", state) end
-        env.AutoEquipPusher = state
-        if state then
-            task.spawn(EquipBestPusherFunc)
-        end
-    end
-})
-
-AutoTrailToggle = MainTab:CreateToggle({
-    Name = "Auto Trail";
-    Desc = "Buys Best Trail";
-    CurrentValue = false;
-    Flag = "TrailBest";
-    Callback = function(state)
-        if debug then print("[Debug] Auto Trail state: ", state) end
-        env.AutoEquipTrail = state
-        if state then
-            task.spawn(EquipBestTrailFunc)
-        end
-    end
-})
-
 local UpgradesTab = Window:CreateTab({
     Name = "Upgrades";
     Desc = "Upgrades";
@@ -674,8 +735,8 @@ MaxUpgradeToggle = UpgradesTab:CreateToggle({
 })
 
 AutoUpgradeCashToggle = UpgradesTab:CreateToggle({
-    Name = "Auto Upgrade Cash";
-    Desc = "Automatically buys cash upgrades";
+    Name = "Auto Upgrade";
+    Desc = "Automatically buys Cash and Gems upgrades";
     CurrentValue = false;
     Flag = "CashUpgrades";
     Callback = function(state)
@@ -683,6 +744,49 @@ AutoUpgradeCashToggle = UpgradesTab:CreateToggle({
         if debug then print("[Debug] Auto Upgrade state: ", state) end
         if state then
             task.spawn(UpgradeCashFunc)
+        end
+    end
+})
+
+
+AutoPusherToggle = UpgradesTab:CreateToggle({
+    Name = "Auto Pusher";
+    Desc = "Equips Best Pusher";
+    CurrentValue = false;
+    Flag = "PusherBest";
+    Callback = function(state)
+        if debug then print("[Debug] Auto Pusher state: ", state) end
+        env.AutoEquipPusher = state
+        if state then
+            task.spawn(EquipBestPusherFunc)
+        end
+    end
+})
+
+AutoTrailToggle = UpgradesTab:CreateToggle({
+    Name = "Auto Trail";
+    Desc = "Buys Best Trail";
+    CurrentValue = false;
+    Flag = "TrailBest";
+    Callback = function(state)
+        if debug then print("[Debug] Auto Trail state: ", state) end
+        env.AutoEquipTrail = state
+        if state then
+            task.spawn(EquipBestTrailFunc)
+        end
+    end
+})
+
+AutoAuraToggle = UpgradesTab:CreateToggle({
+    Name = "Auto Aura";
+    Desc = "Buys Best Aura";
+    CurrentValue = false;
+    Flag = "AuraBest";
+    Callback = function(state)
+        if debug then print("[Debug] Auto Aura state:", state) end
+        env.AutoEquipAura = state
+        if state then
+            task.spawn(EquipBestAuraFunc)
         end
     end
 })
