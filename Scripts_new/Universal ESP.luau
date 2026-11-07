@@ -264,6 +264,7 @@ table.insert(connections, RunService.RenderStepped:Connect(function()
                                         drawings.DistanceText.Visible = false
                                         drawings.PlayerName.Visible = false
                                         drawings.Tracers.Visible = false
+                                        drawings.HeadDot.Visible = false
                                     end
                                 elseif plr.TeamColor ~= Player.TeamColor then
                                     if env.BoxEnabled == true then
@@ -334,6 +335,7 @@ table.insert(connections, RunService.RenderStepped:Connect(function()
             drawings.DistanceText.Visible = false
             drawings.PlayerName.Visible = false
             drawings.Tracers.Visible = false
+            drawings.HeadDot.Visible = false
         end
     end
 end))
@@ -343,7 +345,7 @@ local Window = Airflow:CreateWindow({
     LoadingSubtitle = "by shimixd",
     Icon = "scan-eye",
     Theme = "Default",
-    ToggleUIKeybind = "F2",
+    ToggleUIKeybind = "F",
     Size = UDim2.fromOffset(640, 480),
     MinSize = Vector2.new(480, 360),
     MaxSize = Vector2.new(1000, 700),
@@ -608,7 +610,7 @@ SettingsTab:CreateButton({
 
 SettingsTab:CreateKeybind({
     Name = "Toggle UI",
-    CurrentKeybind = "F2",
+    CurrentKeybind = "F",
     OnChanged = function(Key)
         Window:SetKeybind(Key)
     end,
