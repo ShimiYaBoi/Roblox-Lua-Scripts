@@ -29,13 +29,11 @@ local Running = {
     Merge = false;
 }
 
-if debug then print("[Debug] Player Plot Attribute: ", plot) end
+    if debug then print("[Debug] Player Plot Attribute: ", plot) end
 if currentPlot then
-    if debug then
-        print("[Debug] Current Plot Found In Workspace")
-    else
-        warn("[Debug] Current Plot not Found in Workspace")
-    end
+    if debug then print("[Debug] Current Plot Found In Workspace") end
+else
+    if debug then warn("[Debug] Current plot not Found in Workspace")
 end
 
 local function UpdateCharacter(character)
