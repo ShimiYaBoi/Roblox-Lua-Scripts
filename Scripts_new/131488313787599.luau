@@ -154,9 +154,9 @@ function BuySlotsFunc()
 end
 
 local Window = Airflow:CreateWindow({
-    Name = "Name",
+    Name = "Bullet Vs Everything",
     LoadingSubtitle = "by shimixd",
-    Icon = "star",
+    Icon = "target",
     Theme = "Default",
     ToggleUIKeybind = "F",
     Size = UDim2.fromOffset(640, 480),
@@ -167,7 +167,7 @@ local Window = Airflow:CreateWindow({
     OpenButton = { Title = "Hub", Icon = "monitor" },
     Loading = {
         Enabled = true,
-        Title = "Title",
+        Title = "Shimi's Hub",
         Text = "Starting",
         Steps = { "Preparing interface", "Loading icons", "Almost there" },
         Duration = 1.6,
@@ -186,7 +186,7 @@ local Window = Airflow:CreateWindow({
                 Name = "Changelog",
                 Icon = "scroll-text",
                 Entries = {
-                    {Title = "v1.3", Tag = "Latest", Changes = "Fixed Auto Rebirth", "Added Auto buy slots"};
+                    {Title = "v1.3", Tag = "Latest", Changes = "Fixed Auto Rebirth", "Added Auto buy slots", "Fixed Hub Titles"};
                     {Title = "v1.2", Date = "Nov 8th", Changes = "Added Auto Buy Guns"};
                     {Title = "v1.1", Date = "Nov 4th", Changes = "Added Auto Shot", "Added Auto Rebirth"};
                     {Title = "v1.0", Date = "Nov 2nd", Content = "Created The script with Simple Functions"}
