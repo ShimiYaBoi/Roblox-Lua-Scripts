@@ -2,7 +2,7 @@ local ws = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local plr = Players.LocalPlayer
 local char,hum,hrp
-local debug = true
+local debug = false
 local env = getgenv()
 local Airflow = loadstring(game:HttpGet("https://raw.githubusercontent.com/PookiePepelsss/Airflow-UI/refs/heads/main/Source.luau"))()
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
