@@ -216,6 +216,7 @@ function UpgradeHelper()
         end
         task.wait(10)
     end
+    Running.HelperUpgrades = false
 end
 
 local Window = Airflow:CreateWindow({
