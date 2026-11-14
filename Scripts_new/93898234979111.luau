@@ -11,12 +11,16 @@ local DebugUsers = {285226551}
 local PlayerBase;
 local Remotes = ReplicatedStorage:FindFirstChild("Remotes", true)
 local FishingShared = require(ReplicatedStorage:WaitForChild("FishingShared", 5))
+local SpearsUpgradesList, selectedSpearsUpgradesList = {}, {}
+local HelperUpgradesList, selectedHelperUpgradesList = {}, {}
 
 env.AutoThrowNet = false;
 env.AutoRebirth = false;
 env.AutoBuyNets = false;
 env.AutoCollectCash = false;
 env.AutoEquipBest = false;
+env.AutoSpearUpgrades = false;
+env.AutoHelperUpgrades = false;
 
 local Running = {
     NetThrow = false;
@@ -24,6 +28,8 @@ local Running = {
     BuyNets = false;
     CollectCash = false;
     EquipBest = false;
+    SpearUpgrades = false;
+    HelperUpgrades = false;
 }
 
 local function UpdateCharacter(character)
@@ -62,6 +68,24 @@ for _, base in ipairs(ws.Map:FindFirstChild("Bases"):GetChildren()) do
     if base:GetAttribute("OwnerUserId") == GetUserId() then
         PlayerBase = base
         if debug then print("[Debug] Found Player's Base: " .. tostring(base)) end
+    end
+end
+
+for _, t in ipairs(FishingShared.Spear.Upgrades) do
+    for name, value in pairs(t) do
+        if name == "Id" then
+            table.insert(SpearsUpgradesList, value)
+            if debug then print ("[Debug] Spear Upgrade Added: " .. value) end
+        end
+    end
+end
+
+for _, t in ipairs(FishingShared.Helper.Upgrades) do
+    for name, value in pairs(t) do
+        if name == "Id" then
+            table.insert(HelperUpgradesList, value)
+            if debug then print("[Debug] Fishermen Upgrade Added: " .. value) end
+        end
     end
 end
 
@@ -120,13 +144,31 @@ end
 function CollectCashFunc()
     if Running.CollectCash then return end
 
-    local Event = Remotes.CollectPadReq
     Running.CollectCash = true
     while env.AutoCollectCash do
-        task.wait(1.1)
-        for i=1, 10 do
-            Event:FireServer(i)
+        if PlayerBase then
+            local root = GetHRP()
+            local savedPos = root.Position
+            local Pedastal = PlayerBase:FindFirstChild("Pedestals", true)
+            if Pedastal then
+                if debug then print("[Debug] Pedastal Found") end
+                for _, v in ipairs(Pedastal:GetChildren()) do
+                    local pad = v:FindFirstChild("Pad", true)
+                    if pad then
+                        root.Position = pad.Position
+                        task.wait(0.2)
+                        if debug then print("[Debug] Collected Pedestal: ".. tostring(v:GetAttribute("Slot"))) end
+                    end
+                end
+                root.Position = savedPos
+            end
+        else
+            env.AutoCollectCash = false;
+            Running.CollectCash = false;
+            if debug then warn("[Debug] Player base not Found - Check Locator") end
+            return
         end
+        task.wait(60)
     end
     Running.CollectCash = false
 end
@@ -141,6 +183,39 @@ function AutoEquipBestFunc()
         Event:FireServer()
     end
     Running.EquipBest = false
+end
+
+function UpgradeSpears()
+    if Running.SpearUpgrades then return end
+
+    Running.SpearUpgrades = true
+    local Event = Remotes.SpearAction
+    while env.AutoSpearUpgrades do
+        for _, id in ipairs(selectedSpearsUpgradesList) do
+            if not env.AutoSpearUpgrades then break end
+            if table.find(selectedSpearsUpgradesList, id) then
+                Event:InvokeServer("buy", id)
+            end
+        end
+        task.wait(10)
+    end
+    Running.SpearUpgrades = false
+end
+
+function UpgradeHelper()
+    if Running.HelperUpgrades then return end
+
+    Running.HelperUpgrades = true
+    local Event = Remotes.HelperAction
+    while env.AutoHelperUpgrades do
+        for _, id in ipairs(selectedHelperUpgradesList) do
+            if not env.AutoHelperUpgrades then break end
+            if table.find(selectedHelperUpgradesList, id) then
+                Event:InvokeServer("buy", id)
+            end
+        end
+        task.wait(10)
+    end
 end
 
 local Window = Airflow:CreateWindow({
@@ -176,7 +251,8 @@ local Window = Airflow:CreateWindow({
                 Name = "Changelog",
                 Icon = "scroll-text",
                 Entries = {
-                    {Title = "v1.0", Date = "---", Content = "Created the Script", "Planning To Update The Hub Later"}
+                    {Title = "v1.1", Tag = "Latest", Changes = {"Fixed Auto Collect Cash", "Added Auto Upgrades"}};
+                    {Title = "v1.0", Date = "13th Nov, 2026", Content = "Created the Script, Planning To Update The Hub Later"}
                 }
             }
         }
@@ -190,6 +266,13 @@ local MainTab = Window:CreateTab({
     Desc = "Auto Farm Functions";
     Icon = "fishing-hook";
     EmptyText = "Nothing yet";
+})
+
+local UpgradesTab = Window:CreateTab({
+    Name = "Upgrades";
+    Desc = "Auto Upgrades Menu";
+    Icon = "arrow-up";
+    EmptyText = "Nothing here yet";
 })
 
 local SettingsTab = Window:CreateTab({
@@ -269,6 +352,52 @@ MainTab:Toggle({
     end
 })
 
+UpgradesTab:CreateDropdown({
+    Name = "Spear Upgrades";
+    Desc = "What Upgrades to buy";
+    Options = SpearsUpgradesList;
+    CurrentOption = nil;
+    MultipleOptions = true;
+    SearchAfter = 5;
+    Flag = "SpearUpgradesList";
+    Callback = function(opt)
+        selectedSpearsUpgradesList = opt
+
+        if debug then print("[Debug] Selected Spear Upgrade(s): " .. table.concat(selectedSpearsUpgradesList, ", ")) end
+        if #selectedSpearsUpgradesList == 0 then
+            env.AutoSpearUpgrades = false;
+            if debug then print("[Debug] Disabled Auto Spear Upgrade") end
+        else
+            if debug then print("[Debug] Enabled Auto Spear Upgrade") end
+            env.AutoSpearUpgrades = true;
+            task.spawn(UpgradeSpears)
+        end
+    end
+})
+
+UpgradesTab:CreateDropdown({
+    Name = "Fisherman Upgrades";
+    Desc = "What Upgrades to buy";
+    Options = HelperUpgradesList;
+    CurrentOption = nil;
+    MultipleOptions = true;
+    SearchAfter = 5;
+    Flag = "HelperUpgradesList";
+    Callback = function(opt)
+        selectedHelperUpgradesList = opt
+
+        if debug then print("[Debug] Selected Helper Upgrade(s): " .. table.concat(selectedHelperUpgradesList, ", ")) end
+        if #selectedHelperUpgradesList == 0 then
+            env.AutoHelperUpgrades = false;
+            if debug then print("[Debug] Disabled Auto Helper Upgrades") end
+        else
+            if debug then print("[Debug] Enabled Auto Helper Upgrades") end
+            env.AutoHelperUpgrades = true;
+            task.spawn(UpgradeHelper)
+        end
+    end
+})
+
 SettingsTab:CreateButton({
     Name = "Unload Script";
     Icon = "power";
@@ -284,6 +413,8 @@ SettingsTab:CreateButton({
                 env.AutoBuyNets = false;
                 env.AutoCollectCash = false;
                 env.AutoEquipBest = false;
+                env.AutoSpearUpgrades = false;
+                env.AutoHelperUpgrades = false;
             end;
         })
     end;
