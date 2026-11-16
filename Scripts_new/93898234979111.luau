@@ -1,3 +1,13 @@
+local env = getgenv()
+
+if env.ShimiHubLoaded then
+    if env.ShimiHubUnload then
+        pcall(env.ShimiHubUnload)
+    end
+end
+
+env.ShimiHubLoaded = true
+
 local ws = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
@@ -5,7 +15,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local plr = Players.LocalPlayer
 local char,hum,hrp
 local debug: boolean = false
-local env = getgenv()
 local Airflow = loadstring(game:HttpGet("https://raw.githubusercontent.com/PookiePepelsss/Airflow-UI/refs/heads/main/Source.luau"))()
 local DebugUsers = {285226551}
 local PlayerBase;
@@ -13,6 +22,8 @@ local Remotes = ReplicatedStorage:FindFirstChild("Remotes", true)
 local FishingShared = require(ReplicatedStorage:WaitForChild("FishingShared", 5))
 local SpearsUpgradesList, selectedSpearsUpgradesList = {}, {}
 local HelperUpgradesList, selectedHelperUpgradesList = {}, {}
+local UpgradesList = {}
+local selectedFishingUpgrades, selectedMarketUpgrades, selectedShowcaseUpgrades = {}, {}, {}
 
 env.AutoThrowNet = false;
 env.AutoRebirth = false;
@@ -21,6 +32,9 @@ env.AutoCollectCash = false;
 env.AutoEquipBest = false;
 env.AutoSpearUpgrades = false;
 env.AutoHelperUpgrades = false;
+env.AutoClaimIndex = false;
+env.AutoFishingUpgrades = false;
+env.AutoMarketUpgrade = false;
 
 local Running = {
     NetThrow = false;
@@ -30,6 +44,9 @@ local Running = {
     EquipBest = false;
     SpearUpgrades = false;
     HelperUpgrades = false;
+    ClaimIndex = false;
+    FishingUgprades = false;
+    MarketUpgrades = false;
 }
 
 local function UpdateCharacter(character)
@@ -64,10 +81,23 @@ if table.find(DebugUsers, GetUserId()) then
     debug = true
 end
 
+function DebugPrint(msg: any, msgType: string?)
+    if debug then
+        msgType = msgType or "Info"
+        local format = "[Debug | "..tostring(msgType).."] " .. tostring(msg)
+
+        if msgType == "Warning" then
+            warn(format)
+        else
+            print(format)
+        end
+    end
+end
+
 for _, base in ipairs(ws.Map:FindFirstChild("Bases"):GetChildren()) do
     if base:GetAttribute("OwnerUserId") == GetUserId() then
         PlayerBase = base
-        if debug then print("[Debug] Found Player's Base: " .. tostring(base)) end
+        DebugPrint("Found Player's Base: " .. tostring(base))
     end
 end
 
@@ -75,7 +105,7 @@ for _, t in ipairs(FishingShared.Spear.Upgrades) do
     for name, value in pairs(t) do
         if name == "Id" then
             table.insert(SpearsUpgradesList, value)
-            if debug then print ("[Debug] Spear Upgrade Added: " .. value) end
+            DebugPrint("Spear Upgrade Added: " .. value)
         end
     end
 end
@@ -84,8 +114,32 @@ for _, t in ipairs(FishingShared.Helper.Upgrades) do
     for name, value in pairs(t) do
         if name == "Id" then
             table.insert(HelperUpgradesList, value)
-            if debug then print("[Debug] Fishermen Upgrade Added: " .. value) end
+            DebugPrint("Fishermen Upgrade Added: " .. value)
         end
+    end
+end
+
+for _, t in ipairs(FishingShared.Upgrades) do
+    local tab = t.Tab
+
+    if not UpgradesList[tab] then
+        UpgradesList[tab] = {}
+    end
+
+    table.insert(UpgradesList[tab], t.Id)
+end
+
+function GetValidPlayerData()
+    while true do
+        local success, data = pcall(function()
+            return Remotes.GetData:InvokeServer()
+        end)
+
+        if success and data and data.Helper then
+            return data
+        end
+
+        task.wait(0.5)
     end
 end
 
@@ -115,7 +169,7 @@ function RebirthFunc()
     Running.Rebirth = true
     while env.AutoRebirth do
         task.wait(0.1)
-        local plrData = Remotes.GetData:InvokeServer()
+        local plrData = GetValidPlayerData()
         if FishingShared.CanRebirth(plrData) then
             if debug then print("[Debug] Can Rebirth, Attempting Rebirth") end
             Event:FireServer()
@@ -194,10 +248,10 @@ function UpgradeSpears()
         for _, id in ipairs(selectedSpearsUpgradesList) do
             if not env.AutoSpearUpgrades then break end
             if table.find(selectedSpearsUpgradesList, id) then
-                Event:InvokeServer("buy", id)
+                    Event:InvokeServer("buy", id)
             end
         end
-        task.wait(10)
+        task.wait(0.1)
     end
     Running.SpearUpgrades = false
 end
@@ -208,15 +262,70 @@ function UpgradeHelper()
     Running.HelperUpgrades = true
     local Event = Remotes.HelperAction
     while env.AutoHelperUpgrades do
+        local plrData = GetValidPlayerData()
         for _, id in ipairs(selectedHelperUpgradesList) do
             if not env.AutoHelperUpgrades then break end
             if table.find(selectedHelperUpgradesList, id) then
-                Event:InvokeServer("buy", id)
+                if FishingShared.HelperLevelOk(plrData, id, plrData.Helper[tostring(tostring(id))]+1) then
+                    Event:InvokeServer("buy", id)
+                end
             end
         end
-        task.wait(10)
+        task.wait(0.1)
     end
     Running.HelperUpgrades = false
+end
+
+function ClaimIndexFunc()
+    if Running.ClaimIndex then return end
+
+    Running.ClaimIndex = true
+    local Event = Remotes.Rewards
+    while env.AutoClaimIndex do
+        task.wait(2)
+        Event:InvokeServer("claimMutSetAll");
+    end
+    Running.ClaimIndex = false;
+end
+
+function UpgradeFishingTab()
+    if Running.FishingUgprades then return end
+
+    Running.FishingUgprades = true
+    local Event = Remotes.BuyItem
+    while env.AutoFishingUpgrades do
+        local plrData = GetValidPlayerData()
+        for _, id in ipairs(selectedFishingUpgrades) do
+            if not env.AutoFishingUpgrades then break end
+            if table.find(selectedFishingUpgrades, id) then
+                if FishingShared.UpgradeLevelOk(plrData, FishingShared.UpgradeById[tostring(id)],plrData.Upgrades[tostring(id)]+1) then
+                    Event:FireServer("Upgrade", tostring(id))
+                end
+            end
+        end
+        task.wait(0.1)
+    end
+    Running.FishingUgprades = false;
+end
+
+function UpgradeMarketTab()
+    if Running.MarketUpgrades then return end
+
+    Running.MarketUpgrades = true
+    local Event = Remotes.BuyItem
+    while env.AutoMarketUpgrade do
+        local plrData = GetValidPlayerData()
+        for _, id in ipairs(selectedMarketUpgrades) do
+            if not env.AutoMarketUpgrade then break end
+            if table.find(selectedMarketUpgrades, id) then
+                if FishingShared.UpgradeLevelOk(plrData, FishingShared.UpgradeById[tostring(id)],plrData.Upgrades[tostring(id)]+1) then
+                    Event:FireServer("Upgrade", tostring(id))
+                end
+            end
+        end
+        task.wait(0.1)
+    end
+    Running.MarketUpgrades = false;
 end
 
 local Window = Airflow:CreateWindow({
@@ -252,7 +361,8 @@ local Window = Airflow:CreateWindow({
                 Name = "Changelog",
                 Icon = "scroll-text",
                 Entries = {
-                    {Title = "v1.1", Tag = "Latest", Changes = {"Fixed Auto Collect Cash", "Added Auto Upgrades"}};
+                    {Title = "v1.2", Tag = "Latest", Changes = {"Improved Auto Upgrade Function For Fisherman and Spear Gun", "Added More Auto Upgrades + Auto Claim Index"}};
+                    {Title = "v1.1", Date = "14th Nov, 2026", Changes = {"Fixed Auto Collect Cash", "Added Auto Upgrades"}};
                     {Title = "v1.0", Date = "13th Nov, 2026", Content = "Created the Script, Planning To Update The Hub Later"}
                 }
             }
@@ -261,6 +371,25 @@ local Window = Airflow:CreateWindow({
     },
     Parent = game:GetService("CoreGui"),
 })
+
+env.ShimisHubUnload = function()
+    env.AutoThrowNet = false
+    env.AutoRebirth = false
+    env.AutoBuyNets = false
+    env.AutoCollectCash = false
+    env.AutoEquipBest = false
+    env.AutoSpearUpgrades = false
+    env.AutoHelperUpgrades = false
+    env.AutoClaimIndex = false
+    env.AutoFishingUpgrades = false
+    env.AutoMarketUpgrade = false
+
+    if Window then
+        Window:Destroy()
+    end
+
+    env.ShimisHubLoaded = false
+end
 
 local MainTab = Window:CreateTab({
     Name = "Main";
@@ -353,6 +482,20 @@ MainTab:Toggle({
     end
 })
 
+MainTab:Toggle({
+    Name = "Auto Claim Index";
+    Desc = "Automatically Claims Index";
+    Flag = "ClaimIndex";
+    CurrentValue = false;
+    Callback = function(state)
+        env.AutoClaimIndex = state
+
+        if state then
+            task.spawn(ClaimIndexFunc)
+        end
+    end
+})
+
 UpgradesTab:CreateDropdown({
     Name = "Spear Upgrades";
     Desc = "What Upgrades to buy";
@@ -399,26 +542,59 @@ UpgradesTab:CreateDropdown({
     end
 })
 
+UpgradesTab:Dropdown({
+    Name = "Fishing Tab Upgrades";
+    Desc = "Fishing Upgrades";
+    Options = UpgradesList["Fishing"];
+    CurrentOption = {};
+    MultipleOptions = true;
+    SearchAfter = 4;
+    Flag = "FishingTabUpgrades";
+    Callback = function(opt)
+        selectedFishingUpgrades = opt
+
+        if #selectedFishingUpgrades == 0 then
+            env.AutoFishingUpgrades = false;
+        else
+            env.AutoFishingUpgrades = true;
+            task.spawn(UpgradeFishingTab)
+        end
+    end
+})
+
+UpgradesTab:Dropdown({
+    Name = "Market Tab Upgrades";
+    Desc = "Market Upgrades";
+    Options = UpgradesList["Market"];
+    CurrentOption = {};
+    MultipleOptions = true;
+    SearchAfter = 4;
+    Flag = "MarketTabUpgrades";
+    Callback = function(opt)
+        selectedMarketUpgrades = opt
+
+        if #selectedMarketUpgrades == 0 then
+            env.AutoMarketUpgrade = false;
+        else
+            env.AutoMarketUpgrade = true;
+            task.spawn(UpgradeMarketTab)
+        end
+    end
+})
+
 SettingsTab:CreateButton({
     Name = "Unload Script";
     Icon = "power";
     Style = "Danger";
     Callback = function()
-        Airflow:Confirm({
-            Title = "Unload?";
-            ConfirmText = "Unload";
-            Callback = function()
-                Window:Destroy()
-                env.AutoThrowNet = false;
-                env.AutoRebirth = false;
-                env.AutoBuyNets = false;
-                env.AutoCollectCash = false;
-                env.AutoEquipBest = false;
-                env.AutoSpearUpgrades = false;
-                env.AutoHelperUpgrades = false;
-            end;
-        })
-    end;
+    Airflow:Confirm({
+        Title = "Unload?",
+        ConfirmText = "Unload",
+        Callback = function()
+            env.ShimisHubUnload()
+        end;
+    })
+end;
 })
 
 SettingsTab:CreateKeybind({
