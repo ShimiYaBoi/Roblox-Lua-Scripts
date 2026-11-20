@@ -45,6 +45,7 @@ local FishingShared = require(ReplicatedStorage:WaitForChild("FishingShared", 5)
 local SkillTree = require(ReplicatedStorage:WaitForChild("SkillTree", 5))
 local SpearsUpgradesList, selectedSpearsUpgradesList = {}, {}
 local HelperUpgradesList, selectedHelperUpgradesList = {}, {}
+local BoatUpgradesList, selectedBoatUpgradesList = {"Hull"}, {}
 local UpgradesList = {}
 local selectedFishingUpgrades, selectedMarketUpgrades, selectedShowcaseUpgrades = {}, {}, {}
 local NetBranch, LuckBranch, CrewBranch, FortuneBranch = {}, {}, {}, {}
@@ -61,6 +62,7 @@ env.AutoFishingUpgrades = false
 env.AutoMarketUpgrade = false
 env.AutoSkillTreeUpgrade = false;
 env.SelectedSkillTree = nil;
+env.AutoBoatUpgrades = false;
 
 local Running = {
     NetThrow = false,
@@ -74,6 +76,7 @@ local Running = {
     FishingUgprades = false,
     MarketUpgrades = false,
     SkillTree = false;
+    BoatUpgrades = false;
 }
 
 --[[
@@ -168,6 +171,15 @@ for _, t in ipairs(FishingShared.Upgrades) do
 
     table.insert(UpgradesList[tab], t.Id)
 end
+
+for _, t in ipairs(FishingShared.Boat.Upgrades) do
+    for name, value in pairs(t) do
+        if name == "Id" then
+            table.insert(BoatUpgradesList, value)
+        end
+    end
+end
+DebugPrint("Boat Upgrades Table: " .. table.concat(BoatUpgradesList, " | "))
 
 function GetValidPlayerData()
     while IsActiveSession() do
@@ -427,6 +439,23 @@ DebugPrint("Skill Tree Luck Branch: " .. table.concat(LuckBranch, " | "))
 DebugPrint("Skill Tree Fortune Branch: " .. table.concat(FortuneBranch, " | "))
 DebugPrint("Skill Tree Crew Branch: " .. table.concat(CrewBranch, " | "))
 
+function BoatUpgradeFunc()
+    if Running.BoatUpgrades then return end
+
+    Running.BoatUpgrades = true
+    local Event = Remotes.BoatAction
+    while IsActiveSession() and env.AutoBoatUpgrades do
+        for _, id in ipairs(selectedBoatUpgradesList) do
+            if not IsActiveSession() or not env.AutoBoatUpgrades then break end
+            if table.find(selectedBoatUpgradesList, id) then
+                Event:InvokeServer("buy", tostring(id))
+            end
+        end
+        task.wait(0.5)
+    end
+    Running.BoatUpgrades = false;
+end
+
 --[[
  __        ________   _______   ______    ________   ______    __  __    
 /_/\      /_______/\/_______/\ /_____/\  /_______/\ /_____/\  /_/\/_/\   
@@ -471,7 +500,7 @@ local Window = Airflow:CreateWindow({
                 Name = "Changelog",
                 Icon = "scroll-text",
                 Entries = {
-                    {Title = "v1.3", Tag = "Latest", Changes = {"Rewrote Script Loading Functions | Better Execution and Loader check", "Added Auto Skill Tree Upgrades"}}, -- 20.11.26
+                    {Title = "v1.3", Tag = "Latest", Changes = {"Rewrote Script Loading Functions | Better Execution and Loader check", "Added Auto Skill Tree Upgrades + Auto Boat Upgrades"}}, -- 20.11.26
                     {Title = "v1.2", Date = "18th Nov, 2026", Changes = {"Improved Auto Upgrade Function For Fisherman and Spear Gun", "Added More Auto Upgrades + Auto Claim Index"}},
                     {Title = "v1.1", Date = "14th Nov, 2026", Changes = {"Fixed Auto Collect Cash", "Added Auto Upgrades"}},
                     {Title = "v1.0", Date = "13th Nov, 2026", Content = "Created the Script, Planning To Update The Hub Later"}
@@ -496,6 +525,7 @@ env.ShimiHubUnload = function()
     env.AutoFishingUpgrades = false
     env.AutoMarketUpgrade = false
     env.AutoSkillTreeUpgrade = false;
+    env.AutoBoatUpgrades = false;
 
     if type(env.ShimiHubConnections) == "table" then
         for _, conn in ipairs(env.ShimiHubConnections) do
@@ -526,6 +556,13 @@ local UpgradesTab = Window:CreateTab({
     Desc = "Auto Upgrades Menu",
     Icon = "arrow-up",
     EmptyText = "Nothing here yet",
+})
+
+local BattlesTab = Window:CreateTab({
+    Name = "Battles",
+    Desc = "Auto Fights and Events";
+    Icon = "sword";
+    EmptyText = "Nothing here yet";
 })
 
 local SettingsTab = Window:CreateTab({
@@ -669,6 +706,30 @@ UpgradesTab:CreateDropdown({
             if debug then print("[Debug] Enabled Auto Helper Upgrades") end
             env.AutoHelperUpgrades = true
             task.spawn(UpgradeHelper)
+        end
+    end
+})
+
+UpgradesTab:CreateDropdown({
+    Name = "Boat Upgrades",
+    Desc = "Boat Upgrades and Boat Unlocks",
+    Options = BoatUpgradesList,
+    CurrentOption = nil,
+    MultipleOptions = true,
+    SearchAfter = 5,
+    Flag = "BoatUpgradesList",
+    Callback = function(opt)
+        if not IsActiveSession() then return end
+        selectedBoatUpgradesList = opt
+
+        DebugPrint("Selected boat Upgrades: " .. table.concat(selectedBoatUpgradesList, " | "))
+        if #selectedBoatUpgradesList == 0 then
+            env.AutoBoatUpgrades = false
+            DebugPrint("Disabling Boat Upgrades")
+        else
+            DebugPrint("Enabling Boat Upgrades")
+            env.AutoBoatUpgrades = true
+            task.spawn(BoatUpgradeFunc)
         end
     end
 })
