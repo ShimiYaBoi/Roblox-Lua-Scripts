@@ -63,6 +63,8 @@ env.AutoMarketUpgrade = false
 env.AutoSkillTreeUpgrade = false;
 env.SelectedSkillTree = nil;
 env.AutoBoatUpgrades = false;
+env.AutoMegFight = false;
+env.AutoBloopFight = false;
 
 local Running = {
     NetThrow = false,
@@ -77,6 +79,8 @@ local Running = {
     MarketUpgrades = false,
     SkillTree = false;
     BoatUpgrades = false;
+    MegFight = false;
+    BloopFight = false;
 }
 
 --[[
@@ -419,6 +423,7 @@ function TreeUpgradeFunc(branch)
             env.AutoSkillTreeUpgrade = false;
             Running.SkillTree = false;
             DebugPrint("Skill Tree not Selected", "Warning")
+            break;
         end
         for _, id in ipairs(env.SelectedSkillTree) do
             task.wait(0.6)
@@ -455,6 +460,44 @@ function BoatUpgradeFunc()
     end
     Running.BoatUpgrades = false;
 end
+
+function FightMegalodonFunc()
+    if Running.MegFight then return end
+
+    Running.MegFight = true
+    local Event = Remotes.MegEvent
+
+    while env.AutoMegFight and IsActiveSession() do
+        if not ws:GetAttribute("MegActive") then
+            DebugPrint("Megalodon is not Active, Waiting", "Warning")
+
+            repeat task.wait(2) until ws:GetAttribute("MegActive")
+            if not env.AutoMegFight then break end
+        end
+        local Meg = ws.MegalodonLocal:WaitForChild("Megalodon")
+        Event:FireServer("fire", Meg.Position + Vector3.new(2, 0, 0))
+        task.wait(0.3)
+    end
+    Running.MegFight = false
+end
+
+function FightBloopFunc()
+    if Running.BloopFight then return end
+
+    Running.BloopFight = true
+    local Event = Remotes.BloopEvent
+    while env.AutoBloopFight and IsActiveSession() do
+        if not ws:GetAttribute("BloopActive") then
+            DebugPrint("Bloop Is not Active, Waiting", "Warning")
+            repeat task.wait(2) until ws:GetAttribute("BloopActive")
+        end
+        local Bloop = ws.BloopLocal:WaitForChild("Bloop")
+        Event:FireServer("fire", Bloop.Position + Vector3.new(2,0,0))
+        task.wait(0.3)
+    end
+    Running.BloopFight = false;
+end
+
 
 --[[
  __        ________   _______   ______    ________   ______    __  __    
@@ -500,7 +543,7 @@ local Window = Airflow:CreateWindow({
                 Name = "Changelog",
                 Icon = "scroll-text",
                 Entries = {
-                    {Title = "v1.3", Tag = "Latest", Changes = {"Rewrote Script Loading Functions | Better Execution and Loader check", "Added Auto Skill Tree Upgrades + Auto Boat Upgrades"}}, -- 20.11.26
+                    {Title = "v1.3", Tag = "Latest", Changes = {"Rewrote Script Loading Functions | Better Execution and Loader check", "Added Auto Skill Tree Upgrades + Auto Boat Upgrades", "Added Megalodon and Bloop Auto Fights"}}, -- 20.11.26
                     {Title = "v1.2", Date = "18th Nov, 2026", Changes = {"Improved Auto Upgrade Function For Fisherman and Spear Gun", "Added More Auto Upgrades + Auto Claim Index"}},
                     {Title = "v1.1", Date = "14th Nov, 2026", Changes = {"Fixed Auto Collect Cash", "Added Auto Upgrades"}},
                     {Title = "v1.0", Date = "13th Nov, 2026", Content = "Created the Script, Planning To Update The Hub Later"}
@@ -526,6 +569,8 @@ env.ShimiHubUnload = function()
     env.AutoMarketUpgrade = false
     env.AutoSkillTreeUpgrade = false;
     env.AutoBoatUpgrades = false;
+    env.AutoMegFight = false;
+    env.AutoBloopFight = false;
 
     if type(env.ShimiHubConnections) == "table" then
         for _, conn in ipairs(env.ShimiHubConnections) do
@@ -797,6 +842,41 @@ UpgradesTab:Dropdown({
         else
             DebugPrint("Nothing Selected in Skill Tree")
             env.AutoSkillTreeUpgrade = false;
+        end
+    end
+})
+
+BattlesTab:CreateParagraph({
+    Title = "Kraken & Pirates Fight";
+    Content = "Kraken & Pirates are fought using the net, Enable 'Auto net' for The kraken and Pirate fights"
+})
+
+BattlesTab:Toggle({
+    Name = "Megalodon Fight";
+    Desc = "Automatically Fires at the Megalodon at the maximum Range possible";
+    CurrentValue = false;
+    Flag = "MegFightFlag";
+    Callback = function(state)
+        if not IsActiveSession() then return end
+        env.AutoMegFight = state
+
+        if state then
+            task.spawn(FightMegalodonFunc)
+        end
+    end
+})
+
+BattlesTab:Toggle({
+    Name = "Bloop Fight";
+    Desc = "Automatically Fires at the Bloop at the maximum Range possible";
+    CurrentValue = false;
+    Flag = "BloopFightFlag";
+    Callback = function(state)
+        if not IsActiveSession() then return end
+        env.AutoBloopFight = state
+
+        if state then
+            task.spawn(FightBloopFunc)
         end
     end
 })
